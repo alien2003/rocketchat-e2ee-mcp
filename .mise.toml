@@ -52,7 +52,7 @@ depends = ["lint", "typecheck"]
 run = "vitest run --project unit"
 
 [tasks."test:integration"]
-description = "Integration tests against the compose stack (run `mise run rc:up` first)"
+description = "Integration tests against the compose stack (needs `mise run rc:up` and one `mise run test:ground-truth`)"
 run = "vitest run --project integration"
 
 [tasks."test:ground-truth"]

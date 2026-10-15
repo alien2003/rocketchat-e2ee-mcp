@@ -15,7 +15,7 @@ export const REASON_HINTS: Record<E2eeFailureReason, string> = {
   'room-key-missing':
     'Encrypted with a room key this account does not hold (e.g. sent before you got access, or before a room key reset older than the 10 kept keys).',
   'room-key-undecryptable':
-    'The room key was shared for a different key pair (your E2EE keys were reset since). Ask a member to re-share keys by opening the room in the official client.',
+    'A room key was shared with this account but does not unwrap with your current private key. Ask a member to re-share keys by opening the room in the official client.',
   'unsupported-algorithm': 'Encrypted with an algorithm this version does not support (e.g. Matrix federation).',
   'malformed-payload': 'The encrypted payload is malformed.',
   'decryption-failed': 'Decryption failed (wrong key or corrupted data).',

@@ -403,12 +403,16 @@ export async function search(
   }
 
   const fromSet = args.from?.map((f) => f.replace(/^@/, '').toLowerCase());
+  const threadRef = args.thread_id ? parseMessageRef(args.thread_id) : {};
+  const threadId = threadRef.threadId ?? threadRef.messageId;
+  if (args.thread_id && !threadId)
+    throw new ToolError('invalid-argument', 'thread_id must be a message id or a thread URL.');
   const hits = app.store.search(args.query, {
     ...(scoped ? { rids: scoped.map((r) => r.rid) } : {}),
     ...(fromSet?.length ? { usernames: fromSet } : {}),
     ...(after ? { after } : {}),
     ...(before ? { before } : {}),
-    ...(args.thread_id ? { threadId: args.thread_id } : {}),
+    ...(threadId ? { threadId } : {}),
     limit,
   });
   type Result = ReturnType<typeof formatMessage> & { snippet: string; source: 'index' | 'server' | 'index+server' };
@@ -420,7 +424,8 @@ export async function search(
 
   // Server-side search only works for unencrypted rooms (E2EE content is opaque to the server). Unencrypted
   // rooms are indexed locally too, so this is opt-in by default unless specific rooms are targeted.
-  const serverSearch = args.include_server_search ?? Boolean(scoped?.length);
+  // refresh=false means "no network at all" unless server search is explicitly requested.
+  const serverSearch = args.include_server_search ?? (refresh && Boolean(scoped?.length));
   if (serverSearch) {
     const plainRooms = (scoped ?? app.store.listRooms()).filter((r) => !r.encrypted).slice(0, 10);
     for (const room of plainRooms) {
@@ -439,7 +444,7 @@ export async function search(
         if (fromSet?.length && !fromSet.includes((raw.u.username ?? '').toLowerCase())) continue;
         if (after && raw.ts < after) continue;
         if (before && raw.ts >= before) continue;
-        if (args.thread_id && raw._id !== args.thread_id && raw.tmid !== args.thread_id) continue;
+        if (threadId && raw._id !== threadId && raw.tmid !== threadId) continue;
         const existing = results.find((x) => x.id === raw._id);
         if (existing) {
           existing.source = 'index+server';
@@ -550,7 +555,10 @@ export async function getFile(
   if (args.file_id && !ID_PATTERN.test(args.file_id))
     throw new ToolError('invalid-argument', 'file_id has an invalid format.');
   await refreshSoft(app);
-  let messageId = args.message_id;
+  let messageId = args.message_id ? parseMessageRef(args.message_id).messageId : undefined;
+  if (args.message_id && !messageId) {
+    throw new ToolError('invalid-argument', 'message_id must be a message id or a Rocket.Chat message URL.');
+  }
   if (!messageId && args.file_id) {
     const row = app.store.db
       .prepare('SELECT id FROM messages WHERE file_json LIKE ? OR attachments_json LIKE ? LIMIT 1')

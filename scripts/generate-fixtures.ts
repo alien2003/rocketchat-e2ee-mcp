@@ -814,6 +814,10 @@ async function main() {
     await shot(admin.page, 'admin-waiting-keys');
     const toolbar = admin.page.getByRole('toolbar', { name: 'Primary Room actions' });
     const disableBtn = toolbar.getByRole('button', { name: 'Disable E2E encryption' });
+    // The toolbar renders asynchronously: wait for either the direct button or the overflow menu.
+    await expect(disableBtn.or(toolbar.getByRole('button', { name: 'Options' })).first()).toBeVisible({
+      timeout: 30_000,
+    });
     if (await disableBtn.isVisible()) {
       await disableBtn.click();
     } else {

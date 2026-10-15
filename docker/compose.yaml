@@ -50,6 +50,8 @@ services:
       # E2EE on, and new private groups / DMs encrypted by default like a typical E2EE workspace.
       OVERWRITE_SETTING_E2E_Enable: "true"
       OVERWRITE_SETTING_E2E_Enable_Encrypt_Files: "true"
+      OVERWRITE_SETTING_E2E_Enabled_Default_DirectRooms: "true"
+      OVERWRITE_SETTING_E2E_Enabled_Default_PrivateRooms: "true"
       # Test-stack conveniences: no 2FA prompts for header auth, no cloud/registration nags, no email.
       OVERWRITE_SETTING_Accounts_TwoFactorAuthentication_Enabled: "false"
       OVERWRITE_SETTING_Accounts_TwoFactorAuthentication_By_Email_Enabled: "false"
@@ -60,6 +62,10 @@ services:
       OVERWRITE_SETTING_Statistics_reporting: "false"
       OVERWRITE_SETTING_Allow_Marketing_Emails: "false"
       OVERWRITE_SETTING_Update_EnableChecker: "false"
+      # The REST limiter is keyed per client IP + route (10 calls/min by default). All Playwright browsers share
+      # 127.0.0.1, so the real web client would throttle itself. Integration tests re-enable it at runtime to
+      # exercise rc-mcp's 429 handling.
+      OVERWRITE_SETTING_API_Enable_Rate_Limiter: "false"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/info').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
       interval: 10s

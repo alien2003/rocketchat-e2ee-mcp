@@ -6,6 +6,7 @@ export default defineConfig({
       {
         test: {
           name: 'unit',
+          setupFiles: ['test/support/setup-quiet.ts'],
           include: ['test/unit/**/*.test.ts'],
           environment: 'node',
         },
@@ -13,6 +14,7 @@ export default defineConfig({
       {
         test: {
           name: 'integration',
+          setupFiles: ['test/support/setup-quiet.ts'],
           include: ['test/integration/**/*.test.ts'],
           environment: 'node',
           testTimeout: 120_000,

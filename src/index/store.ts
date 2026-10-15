@@ -296,7 +296,7 @@ export class IndexStore {
       .prepare('SELECT updated_at, text, decryption_state FROM messages WHERE id = ?')
       .get(m.id) as Row | undefined;
     const searchText = isSearchableType(m.t)
-      ? [m.text, ...m.attachments.flatMap((a) => [a.title, a.description, a.text, a.fileName])]
+      ? [...new Set([m.text, ...m.attachments.flatMap((a) => [a.title, a.description, a.text, a.fileName])])]
           .filter(Boolean)
           .join('\n')
       : '';

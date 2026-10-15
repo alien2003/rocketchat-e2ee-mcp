@@ -36,6 +36,8 @@ beforeAll(async () => {
     const res = spawnSync(join(REPO_ROOT, 'scripts', 'compose.sh'), ['restart', 'rocketchat'], { encoding: 'utf8' });
     if (res.status !== 0) throw new Error(`could not restart Rocket.Chat: ${res.stderr}`);
     await waitForServer();
+    // The restart re-applies OVERWRITE_SETTING_API_Enable_Rate_Limiter=false from docker/compose.yaml.
+    await setLimiter(true);
     await new Promise((r) => setTimeout(r, 3000));
     if (!(await limiterActive())) throw new Error('REST rate limiter still inactive after a restart');
   }

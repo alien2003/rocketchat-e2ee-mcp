@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "rocketchat": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "rocketchat-e2ee-mcp"],
+      "env": {
+        "RC_URL": "${RC_URL}",
+        "RC_USER_ID": "${RC_USER_ID}",
+        "RC_AUTH_TOKEN": "${RC_AUTH_TOKEN}",
+        "RC_E2EE_PASSWORD": "${RC_E2EE_PASSWORD}"
+      }
+    }
+  }
+}

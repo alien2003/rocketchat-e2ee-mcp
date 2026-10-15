@@ -1,0 +1,125 @@
+name: Bug report
+description: rc-mcp (the MCP server or the CLI) does not behave as documented.
+title: 'bug: '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem.
+
+        **Do not paste secrets or private chat content.** That means no personal access token, no E2EE password or
+        passphrase, no private keys, and no decrypted messages from real rooms. rc-mcp never prints the token or the
+        E2EE password, but `rc-mcp doctor` does show your server URL, user id, username and room names; replace them
+        with placeholders if they are private.
+
+        Security vulnerabilities must not be reported here: use the private security advisory link on the
+        "New issue" page instead.
+
+  - type: input
+    id: rc-mcp-version
+    attributes:
+      label: rc-mcp version
+      description: Output of `rc-mcp --version` (or `npx -y rocketchat-e2ee-mcp --version`).
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: rocketchat-version
+    attributes:
+      label: Rocket.Chat server version
+      description: Shown on the `server` line of `rc-mcp doctor`.
+      placeholder: '8.9.0'
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js version
+      description: Output of `node --version` (rc-mcp needs Node.js 24 or newer).
+      placeholder: v24.22.0
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Ubuntu 24.04 / macOS 15 / Windows 11 (WSL2)
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where does it happen?
+      multiple: true
+      options:
+        - MCP server (`rc-mcp serve`, e.g. from Claude Code)
+        - rc-mcp doctor
+        - rc-mcp sync
+        - rc-mcp search
+        - rc-mcp export
+        - rc-mcp purge
+        - Installation / npx
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `rc-mcp doctor --json`
+      description: >-
+        Run it with the same environment variables or config file the MCP server uses. Replace the server URL,
+        user id, username, room names and file paths with placeholders if they are private.
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact command or MCP tool call (name and arguments) and what you did before it.
+      placeholder: |
+        1. rc-mcp sync
+        2. rc-mcp search "deploy checklist" --json
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: >-
+        Include the error object (`code`, `message`, `hint`) or the CLI error, and the `key_status` or
+        `undecryptable.reason` if a room or message could not be decrypted.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs (optional)
+      description: >-
+        stderr of the failing command with `RC_MCP_LOG_LEVEL=debug`. rc-mcp logs JSON lines to stderr and scrubs
+        secrets, but review the output before posting.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I removed tokens, passwords, keys and private message content from everything above.
+          required: true
+        - label: I searched existing issues for this problem.
+          required: true

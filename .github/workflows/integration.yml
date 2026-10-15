@@ -1,0 +1,109 @@
+# Slow end-to-end checks against a disposable Rocket.Chat stack (docker/compose.yaml, throwaway credentials):
+#   1. ground truth: Playwright drives the real Rocket.Chat web client to produce fresh E2EE data, and the
+#      suite checks that rc-mcp decrypts it to what was typed and what the real client rendered;
+#   2. integration: REST client, sync, downloads and `rc-mcp serve` over stdio against the live server.
+# Runs weekly and on demand. The stack only exists inside this job and is torn down at the end.
+name: Integration
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Mondays 05:23 UTC.
+    - cron: '23 5 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  integration:
+    name: Ground truth + integration (Rocket.Chat stack)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      # Keep the pnpm store inside the workspace (same filesystem as node_modules, cached below).
+      pnpm_config_store_dir: ${{ github.workspace }}/.local/pnpm-store
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Installs the exact Node, pnpm and docker-compose versions pinned in .mise.toml.
+      - name: Install tools (mise)
+        uses: jdx/mise-action@v5
+
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: .local/pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: mise exec -- pnpm install --frozen-lockfile
+
+      # .mise.toml sets PLAYWRIGHT_BROWSERS_PATH=0, so Playwright keeps its browsers inside the playwright-core
+      # package in node_modules. mise [env] wins over a workflow-level env var for commands run through mise,
+      # so instead of redirecting the browsers elsewhere we cache that in-package directory. It is restored
+      # after `pnpm install`, once the playwright-core package directory exists.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6
+        with:
+          path: node_modules/.pnpm/playwright-core@*/node_modules/playwright-core/.local-browsers
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      # pnpm install (already up to date) + Playwright Chromium headless shell (skipped when restored from cache).
+      - name: Setup
+        run: mise run setup
+
+      - name: Install system libraries for headless Chromium
+        run: mise exec -- pnpm exec playwright install-deps chromium
+
+      # scripts/compose.sh runs mise's docker-compose against the runner's Docker Engine socket, then
+      # scripts/rc-bootstrap.ts waits for Rocket.Chat and provisions the throwaway users into .local/stack.json.
+      - name: Start Rocket.Chat stack
+        id: stack
+        run: mise run rc:up
+        timeout-minutes: 20
+
+      # Writes the fresh capture to .local/ground-truth/$RC_VERSION and screenshots to .local/ground-truth-shots.
+      - name: Ground-truth tests (real web client)
+        run: mise run test:ground-truth
+        timeout-minutes: 30
+
+      # Needs the ground-truth run recorded in .local/stack.json; still runs if only the ground-truth
+      # assertions failed, so both results are visible.
+      - name: Integration tests
+        if: ${{ !cancelled() && steps.stack.outcome == 'success' }}
+        run: mise run test:integration
+        timeout-minutes: 25
+
+      - name: Collect compose logs
+        if: ${{ always() }}
+        run: |
+          mkdir -p .local
+          mise exec -- scripts/compose.sh logs --no-color > .local/compose-logs.txt 2>&1 || true
+
+      # Throwaway test stack only: screenshots and console output of the scripted web client, plus server logs.
+      - name: Upload diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: integration-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .local/ground-truth-shots/
+            .local/compose-logs.txt
+          # Both paths live under .local/, which upload-artifact treats as hidden.
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Stop Rocket.Chat stack
+        if: ${{ always() }}
+        run: mise run rc:down
+        timeout-minutes: 5

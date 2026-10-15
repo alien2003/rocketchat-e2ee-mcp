@@ -1,0 +1,66 @@
+name: Feature request
+description: Suggest a new capability or an improvement to rc-mcp.
+title: 'feat: '
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        rc-mcp is deliberately **read-only**: it never sends, edits or reacts to messages, marks rooms read,
+        or accepts room keys on the server. Requests that need writes to Rocket.Chat are out of scope for now,
+        but tell us about the use case anyway.
+
+        Please do not paste secrets or private chat content.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What are you trying to do, and what gets in the way today?
+      placeholder: When I ask Claude to find the decision about X, it cannot ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: The behaviour you would like, e.g. a new MCP tool or argument, a CLI flag, or a doctor check.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you use today or other approaches you thought about.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - MCP tools / resources
+        - CLI
+        - Search / index
+        - Sync
+        - E2EE decryption
+        - Configuration
+        - Documentation
+        - Other
+
+  - type: input
+    id: rocketchat-version
+    attributes:
+      label: Rocket.Chat server version (if relevant)
+      placeholder: '8.9.0'
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues for this request.
+          required: true
+        - label: The request does not require rc-mcp to write to the Rocket.Chat server (or I explained why above).

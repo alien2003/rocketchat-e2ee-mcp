@@ -1,0 +1,75 @@
+# Offline checks on every push to main and every pull request: lint, typecheck, unit tests, build,
+# and a packaging smoke test of the npm tarball. No Rocket.Chat stack and no Playwright browsers here;
+# those live in integration.yml.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # Superseded pull request runs are cancelled; runs on main always finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Lint, typecheck, unit tests, build, pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Keep the pnpm store inside the workspace (same filesystem as node_modules, cached below).
+      pnpm_config_store_dir: ${{ github.workspace }}/.local/pnpm-store
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Installs the exact Node, pnpm and docker-compose versions pinned in .mise.toml.
+      - name: Install tools (mise)
+        uses: jdx/mise-action@v5
+
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: .local/pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      # Not `mise run setup`: that task also downloads a Playwright browser, which this job does not need.
+      - name: Install dependencies
+        run: mise exec -- pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: mise run lint
+
+      - name: Typecheck
+        run: mise run typecheck
+
+      - name: Unit tests
+        run: mise run test
+
+      - name: Build
+        run: mise run build
+
+      - name: Pack
+        run: |
+          rm -rf .local/pack
+          mkdir -p .local/pack
+          mise exec -- pnpm pack --pack-destination .local/pack
+          ls -l .local/pack
+
+      # Install the tarball the way users run it (npx, outside the repo) and check the CLI starts.
+      - name: Smoke test the packed CLI
+        run: |
+          tarball="$(ls "$GITHUB_WORKSPACE"/.local/pack/rocketchat-e2ee-mcp-*.tgz)"
+          expected="$(mise exec -- node -p "require('./package.json').version")"
+          actual="$(mise exec -- sh -c 'cd "$RUNNER_TEMP" && npx --yes --package="$1" rc-mcp --version' sh "$tarball")"
+          echo "rc-mcp --version: ${actual}"
+          test "$actual" = "$expected"

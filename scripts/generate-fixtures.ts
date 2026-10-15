@@ -63,7 +63,9 @@ interface ExpectedMessage {
 }
 
 const expected: ExpectedMessage[] = [];
-const rendered: Record<string, Record<string, string>> = { alice: {}, bob: {}, admin: {} };
+/** What the real web client displayed: rendered[who][phase][messageId] = innerText of the message body. */
+const rendered: Record<string, Record<string, Record<string, string>>> = { alice: {}, bob: {}, admin: {} };
+let phase: 'pre-reset' | 'post-reset' = 'pre-reset';
 
 function step(msg: string) {
   console.error(`[gt ${new Date().toISOString().slice(11, 19)}] ${msg}`);
@@ -316,15 +318,29 @@ async function openThread(actor: Actor, msgId: string) {
   await expect(threadComposer(page)).toBeVisible({ timeout: 30_000 });
 }
 
-async function sendThread(actor: Actor, text: string): Promise<string> {
+async function sendThread(actor: Actor, tmid: string, text: string): Promise<string> {
   const { page } = actor;
   const input = threadComposer(page).locator('[name="msg"]');
   await expect(input).toBeEnabled({ timeout: 30_000 });
-  const before = (await threadItems(page).count()) > 0 ? await threadItems(page).last().getAttribute('id') : null;
+  // The thread list renders the root first; wait for it so it is not mistaken for the new reply.
+  await expect(threadList(page).locator(`[id="${tmid}"]`)).toBeVisible({ timeout: 30_000 });
+  const ids = async () => threadItems(page).evaluateAll((els) => els.map((e) => e.getAttribute('id')));
+  const before = new Set(await ids());
   await input.fill(text);
   await threadComposer(page).getByRole('button', { name: 'Send' }).click();
-  await expect.poll(() => threadItems(page).last().getAttribute('id'), { timeout: 30_000 }).not.toEqual(before);
-  return lastMessageId(page, true);
+  let created: string | undefined;
+  await expect
+    .poll(
+      async () => {
+        created = (await ids()).find((id): id is string => !!id && id !== tmid && !before.has(id));
+        return created;
+      },
+      { timeout: 30_000 },
+    )
+    .toBeTruthy();
+  const item = threadList(page).locator(`[id="${created}"]`);
+  await expect(item).not.toHaveClass(/rcx-message--pending/, { timeout: 30_000 });
+  return created as string;
 }
 
 async function closeThread(actor: Actor) {
@@ -398,13 +414,29 @@ async function openRoomFromSidebar(actor: Actor, label: string, rid: string) {
   await waitInRoom(actor, rid);
 }
 
-async function captureRendered(actor: Actor, ids: string[]) {
+const PLACEHOLDER = 'This message is end-to-end encrypted';
+
+/**
+ * Records what the real client displays for each message. Waits (bounded) for the client to finish decrypting,
+ * unless `undecryptable` says the client is not expected to be able to (it then shows the placeholder).
+ */
+async function captureRendered(actor: Actor, ids: string[], undecryptable: string[] = []) {
   for (const id of ids) {
     const loc = actor.page.locator(`[id="${id}"]`).first();
-    if ((await loc.count()) === 0) continue;
+    if ((await loc.count()) === 0) {
+      await messageById(actor.page, id).catch(() => undefined);
+      if ((await loc.count()) === 0) continue;
+    }
     const body = loc.locator('[role="document"][aria-roledescription="message body"]').first();
-    const text = (await body.count()) ? await body.innerText() : await loc.innerText();
-    rendered[actor.who] = { ...rendered[actor.who], [id]: text };
+    const read = async () => ((await body.count()) ? await body.innerText() : await loc.innerText());
+    let text = await read();
+    for (let i = 0; i < 30 && text.includes(PLACEHOLDER) && !undecryptable.includes(id); i++) {
+      await actor.page.waitForTimeout(500);
+      text = await read();
+    }
+    const byPhase = rendered[actor.who] ?? {};
+    byPhase[phase] = { ...byPhase[phase], [id]: text };
+    rendered[actor.who] = byPhase;
   }
 }
 
@@ -630,7 +662,7 @@ async function main() {
 
     await bob.page.waitForTimeout(1500);
     await openThread(bob, m1);
-    const m4 = await sendThread(bob, TEXT.threadReply);
+    const m4 = await sendThread(bob, m1, TEXT.threadReply);
     expected.push({
       label: 'M4-thread-reply',
       room: 'group',
@@ -663,7 +695,8 @@ async function main() {
       sender: 'bob',
       phase: 'pre-reset',
       msgId: m6,
-      text: TEXT.quoteComment,
+      // The client prepends a permalink to the quoted message and encrypts it together with the comment.
+      text: `[ ](${stack.url}/group/${GROUP_NAME}?msg=${m1})\n${TEXT.quoteComment}`,
       quoteOfLabel: 'M1-plain',
     });
 
@@ -827,7 +860,7 @@ async function main() {
     });
     await bob.page.waitForTimeout(1500);
     await openThread(bob, m1);
-    const p3 = await sendThread(bob, TEXT.postResetThread);
+    const p3 = await sendThread(bob, m1, TEXT.postResetThread);
     expected.push({
       label: 'P3-thread-post-reset',
       room: 'group',
@@ -854,15 +887,16 @@ async function main() {
       file: { name: FILES.postReset.name, type: FILES.postReset.type, contentFixture: 'plain/post-reset-notes.txt' },
     });
 
-    // What the real clients render after the reset (old messages via oldRoomKeys for alice/bob).
-    await alice.page.waitForTimeout(3000);
-    await captureRendered(alice, [m1, m2, m3, m5, m6, m7, m8, p1, p2, p4]);
-    await bob.page.reload();
-    await goToGroup(bob, GROUP_NAME, groupRid);
-    await bob.page.waitForTimeout(3000);
-    await captureRendered(bob, [m1, m2, m3, m5, m6, m7, m8, p1, p2, p4]);
+    // What the real clients render after the reset, from a fresh page load (old messages via oldRoomKeys).
+    phase = 'post-reset';
+    for (const member of [alice, bob]) {
+      await member.page.reload();
+      await goToGroup(member, GROUP_NAME, groupRid);
+      await member.page.waitForTimeout(3000);
+      await captureRendered(member, [m1, m2, m3, m5, m6, m7, m8, p1, p2, p4]);
+    }
     await admin.page.waitForTimeout(3000);
-    await captureRendered(admin, [m1, m2, p1, p2, p4]);
+    await captureRendered(admin, [m1, m2, p1, p2, p4], [m1, m2]);
     await shot(alice.page, 'alice-final');
     await shot(admin.page, 'admin-final');
 

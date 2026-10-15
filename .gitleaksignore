@@ -1,0 +1,3 @@
+# Intentional, public test data (not secrets). See test/fixtures/upstream/legacy-v1.json "source": a wrapped legacy
+# room key copied from Rocket.Chat's own MIT-licensed Playwright fixtures, used to verify the legacy v1 decoder.
+f1645fcfc8a14bf7e05ef8f503f7692bcaad047f:test/fixtures/upstream/legacy-v1.json:generic-api-key:19

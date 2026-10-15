@@ -104,7 +104,10 @@ The fixture data is **throwaway**:
   That breakage is acceptable: it happens in tooling, not in the product.
 - **The compose stack runs with the REST rate limiter off** (`OVERWRITE_SETTING_API_Enable_Rate_Limiter: "false"`).
   All Playwright browsers share 127.0.0.1, and the default limit of 10 calls per minute per IP and route would
-  throttle them. The integration layer enables the limiter at runtime to test rc-mcp's 429 handling.
+  throttle them. The integration layer enables the limiter at runtime to test rc-mcp's 429 handling. Observed on
+  8.9.0: on the first boot of a fresh database no REST route gets a limiter rule (the API class reads the default
+  limits before the settings exist), so the test restarts the disposable Rocket.Chat container once when enabling
+  the limiter produces no `X-RateLimit-*` headers.
 - **Some formats have no captured artifact yet:** `rc.v1.aes-sha2` as a `content` object, `rc.v2` with an A128CBC
   key, encrypted pins, `t: 'rm'` tombstones, `removed-file` attachments, `suggestedOldRoomKeys`. Their handling is
   ported from source only (the `suggestedOldRoomKeys` path is unit-tested by presenting captured `oldRoomKeys` in

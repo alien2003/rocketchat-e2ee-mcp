@@ -64,7 +64,8 @@ services:
       OVERWRITE_SETTING_Update_EnableChecker: "false"
       # The REST limiter is keyed per client IP + route (10 calls/min by default). All Playwright browsers share
       # 127.0.0.1, so the real web client would throttle itself. Integration tests re-enable it at runtime to
-      # exercise rc-mcp's 429 handling.
+      # exercise rc-mcp's 429 handling (restarting this container once if needed: on a fresh database's first
+      # boot Rocket.Chat 8.9.0 registers no REST limiter rules until it restarts).
       OVERWRITE_SETTING_API_Enable_Rate_Limiter: "false"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/info').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]

@@ -119,7 +119,7 @@ export class FakeRc {
   }
 
   async get<K extends EndpointName>(endpoint: K, params: QueryParams = {}): Promise<EndpointResponse<K>> {
-    if (this.down) throw new RcApiError('network', endpoint, 'network error calling ' + endpoint);
+    if (this.down) throw new RcApiError('network', endpoint, `network error calling ${endpoint}`);
     this.calls.push({ endpoint, params });
     this.clock += 1000;
     const body = this.handle(endpoint, params);

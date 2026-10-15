@@ -1,0 +1,71 @@
+# Disposable Rocket.Chat test stack for integration and ground-truth tests.
+# Throwaway credentials only. Never point this at, or reuse these values for, a real workspace.
+#
+#   mise run rc:up      # start + bootstrap users
+#   mise run rc:down    # stop and delete volumes
+name: rocketchat-e2ee-mcp
+
+services:
+  mongodb:
+    # Rocket.Chat 8.9 CI certifies MongoDB 8.0 only (compatibleMongoVersions: ["8.0"]).
+    image: docker.io/mongodb/mongodb-community-server:8.0-ubi8
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    restart: unless-stopped
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      # Initiates the single-node replica set on first run; healthy once it reports ok.
+      # (No spaces in the script: some engines re-split CMD arguments on whitespace.)
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try{rs.status().ok}catch(e){rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb:27017'}]}).ok}"
+      interval: 5s
+      timeout: 10s
+      start_period: 10s
+      retries: 30
+
+  rocketchat:
+    image: docker.io/rocketchat/rocket.chat:${RC_VERSION:-8.9.0}
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${RC_PORT:-3000}:3000"
+    environment:
+      MONGO_URL: mongodb://mongodb:27017/rocketchat?replicaSet=rs0
+      # http://localhost is a browser "secure context", which the E2EE client requires.
+      ROOT_URL: http://localhost:${RC_PORT:-3000}
+      PORT: "3000"
+      DEPLOY_METHOD: docker
+      # Non-interactive bootstrap (read by apps/meteor/server/startup/initialData.ts).
+      ADMIN_USERNAME: rcadmin
+      ADMIN_NAME: RC Admin
+      ADMIN_EMAIL: rcadmin@example.test
+      ADMIN_PASS: ${RC_ADMIN_PASS:-throwaway-Admin-pass-1}
+      OVERWRITE_SETTING_Show_Setup_Wizard: completed
+      # E2EE on, and new private groups / DMs encrypted by default like a typical E2EE workspace.
+      OVERWRITE_SETTING_E2E_Enable: "true"
+      OVERWRITE_SETTING_E2E_Enable_Encrypt_Files: "true"
+      # Test-stack conveniences: no 2FA prompts for header auth, no cloud/registration nags, no email.
+      OVERWRITE_SETTING_Accounts_TwoFactorAuthentication_Enabled: "false"
+      OVERWRITE_SETTING_Accounts_TwoFactorAuthentication_By_Email_Enabled: "false"
+      OVERWRITE_SETTING_Accounts_EmailVerification: "false"
+      OVERWRITE_SETTING_Accounts_Send_Email_When_Activating: "false"
+      OVERWRITE_SETTING_Accounts_Send_Email_When_Deactivating: "false"
+      OVERWRITE_SETTING_Register_Server: "false"
+      OVERWRITE_SETTING_Statistics_reporting: "false"
+      OVERWRITE_SETTING_Allow_Marketing_Emails: "false"
+      OVERWRITE_SETTING_Update_EnableChecker: "false"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/info').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 120s
+      retries: 30
+
+volumes:
+  mongodb_data:

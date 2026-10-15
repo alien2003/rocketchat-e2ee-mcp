@@ -1,0 +1,33 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.tgz
+
+# Project-local caches: cloned reference sources, Playwright artifacts, dev data, podman socket
+.local/
+
+# Secrets and personal overrides
+.env
+.env.*
+!.env.example
+.mise.local.toml
+.mcp.json
+!.mcp.json.example
+*.pem
+*.key
+
+# Plaintext index / data dirs / dumps (they contain decrypted messages)
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+data/
+dumps/
+*.dump
+
+# Tooling
+.claude/worktrees/
+.claude/settings.local.json
+.DS_Store
+*.log

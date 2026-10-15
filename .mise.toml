@@ -1,0 +1,86 @@
+#:schema https://mise.jdx.dev/schema/mise.json
+# Everything this project needs comes from here: `mise install && mise run setup`.
+# Machine-specific overrides (e.g. an in-repo pnpm store) go in the gitignored .mise.local.toml.
+
+[tools]
+node = "24.22.0"
+pnpm = "12.11.2"
+# Compose v2+ CLI. Talks to Docker Engine, or to Podman through scripts/compose.sh.
+docker-compose = "5.6.0"
+
+[env]
+_.path = ["{{config_root}}/node_modules/.bin"]
+# Rocket.Chat version the compose stack, fixtures and docs are pinned to.
+RC_VERSION = "8.9.0"
+# Playwright browsers go into node_modules (inside the repo), never ~/.cache.
+PLAYWRIGHT_BROWSERS_PATH = "0"
+
+[tasks.setup]
+description = "Install dependencies and the Playwright browser (all inside the repo)"
+run = [
+  "pnpm install --frozen-lockfile",
+  "pnpm exec playwright install chromium --only-shell",
+]
+
+[tasks.dev]
+description = "Run the MCP server from source with auto-reload (stdio)"
+run = "node --watch src/cli/main.ts serve"
+
+[tasks.build]
+description = "Compile TypeScript to dist/"
+run = ["rm -rf dist", "tsc -p tsconfig.build.json"]
+
+[tasks.lint]
+description = "Biome lint + format check"
+run = "biome check ."
+
+[tasks."lint:fix"]
+description = "Apply Biome fixes and formatting"
+run = "biome check --write ."
+
+[tasks.typecheck]
+description = "Type-check the whole project"
+run = "tsc -p tsconfig.json --noEmit"
+
+[tasks.test]
+description = "Unit tests (offline; crypto is checked against committed ground-truth fixtures)"
+run = "vitest run --project unit"
+
+[tasks."test:integration"]
+description = "Integration tests against the compose stack (run `mise run rc:up` first)"
+run = "vitest run --project integration"
+
+[tasks."test:ground-truth"]
+description = "Drive the real web client into a scratch dir, then decrypt that fresh capture"
+run = [
+  "node scripts/rc-bootstrap.ts",
+  "node scripts/generate-fixtures.ts --out .local/ground-truth/$RC_VERSION",
+  "vitest run --project ground-truth",
+]
+
+[tasks."fixtures:generate"]
+description = "Regenerate the committed fixtures in test/fixtures/$RC_VERSION from the real web client"
+run = [
+  "node scripts/rc-bootstrap.ts",
+  "node scripts/generate-fixtures.ts --out test/fixtures/$RC_VERSION",
+]
+
+[tasks."rc:up"]
+description = "Start Rocket.Chat $RC_VERSION + MongoDB and bootstrap the admin and test users"
+run = ["scripts/compose.sh up -d", "node scripts/rc-bootstrap.ts"]
+
+[tasks."rc:down"]
+description = "Stop the compose stack and drop its volumes (it is a disposable test stack)"
+run = "scripts/compose.sh down -v --remove-orphans"
+
+[tasks."rc:logs"]
+description = "Follow Rocket.Chat container logs"
+run = "scripts/compose.sh logs -f --tail=200 rocketchat"
+
+[tasks.clean]
+description = "Remove containers, volumes, networks, ./.local, dist and node_modules"
+run = [
+  "scripts/compose.sh down -v --remove-orphans || true",
+  "scripts/compose.sh --stop-podman-service || true",
+  "rm -rf .local dist node_modules coverage",
+]

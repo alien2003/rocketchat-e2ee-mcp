@@ -1,0 +1,63 @@
+{
+  "name": "rocketchat-e2ee-mcp",
+  "version": "0.1.0",
+  "description": "Read-only MCP server for Rocket.Chat that decrypts end-to-end encrypted rooms locally with your own keys, so Claude Code can browse and search team chat.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "rocket.chat",
+    "rocketchat",
+    "e2ee",
+    "end-to-end-encryption",
+    "claude",
+    "claude-code",
+    "chat-search"
+  ],
+  "license": "MIT",
+  "author": "alien2003",
+  "homepage": "https://github.com/alien2003/rocketchat-e2ee-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alien2003/rocketchat-e2ee-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alien2003/rocketchat-e2ee-mcp/issues"
+  },
+  "type": "module",
+  "bin": {
+    "rc-mcp": "dist/cli/main.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "SECURITY.md"
+  ],
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "packageManager": "pnpm@12.11.2",
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "prepack": "pnpm run build",
+    "lint": "biome check .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --project unit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "commander": "^15.0.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@playwright/test": "1.64.1",
+    "@types/node": "^24.19.2",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}

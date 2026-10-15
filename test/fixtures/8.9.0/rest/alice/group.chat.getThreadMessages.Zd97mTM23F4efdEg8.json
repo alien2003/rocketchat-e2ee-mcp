@@ -1,0 +1,63 @@
+{
+  "messages": [
+    {
+      "_id": "zZNBZ73mGsB2XQTC4",
+      "rid": "6ad1459708d9d91a69c55ade",
+      "tmid": "Zd97mTM23F4efdEg8",
+      "tshow": true,
+      "e2eMentions": {
+        "e2eUserMentions": [],
+        "e2eChannelMentions": []
+      },
+      "content": {
+        "algorithm": "rc.v2.aes-sha2",
+        "kid": "d115000d-e8e5-46c6-88df-6ef67d741ec6",
+        "iv": "iAAi0vcIF/40VQdn",
+        "ciphertext": "VfNBKDBWfOgaju+U7aSkgsYKnq7VzB8580JZYzmgcieG+LogM3JU4j56RuB8nhOM5xD3dKPyJbg9x1VvlFXiW2wP1k6GB/rJJgAqawC3Tm9eOFCcHwyQmUHNgLBfempG3fShNnu9TPTpLQ=="
+      },
+      "t": "e2e",
+      "ts": "2026-10-15T21:29:03.070Z",
+      "u": {
+        "_id": "tpLGiapWGnoY74w3j",
+        "username": "bob",
+        "name": "Bob Brown"
+      },
+      "msg": "",
+      "_updatedAt": "2026-10-15T21:29:03.077Z",
+      "mentions": [],
+      "channels": [],
+      "urls": []
+    },
+    {
+      "_id": "jwxGoueDzd852eANq",
+      "rid": "6ad1459708d9d91a69c55ade",
+      "tmid": "Zd97mTM23F4efdEg8",
+      "e2eMentions": {
+        "e2eUserMentions": [],
+        "e2eChannelMentions": []
+      },
+      "content": {
+        "algorithm": "rc.v2.aes-sha2",
+        "kid": "db242528-407d-4ef8-b23a-d3192f9baabc",
+        "iv": "qDhitEsjSmPsiRah",
+        "ciphertext": "iMQVyYNN8+deWzcN8Ff/GxjzLKu+mq1Ln+sF9xi4DuNdn0m4+0XhPb//v1nB4GlYoWUREmSXSwqbEkugOhRZI/VH1VujtvTCw9KJH/ZWlUWWC2Keploqif6J5Ae1"
+      },
+      "t": "e2e",
+      "ts": "2026-10-15T21:31:50.166Z",
+      "u": {
+        "_id": "tpLGiapWGnoY74w3j",
+        "username": "bob",
+        "name": "Bob Brown"
+      },
+      "msg": "",
+      "_updatedAt": "2026-10-15T21:31:50.174Z",
+      "mentions": [],
+      "channels": [],
+      "urls": []
+    }
+  ],
+  "count": 2,
+  "offset": 0,
+  "total": 2,
+  "success": true
+}

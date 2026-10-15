@@ -1,0 +1,3 @@
+{
+  "error": "Error: GET rooms.info?roomId=6ad145a408d9d91a69c55aed -> 400 {\"success\":false,\"error\":\"not-allowed\",\"errorType\":\"Not Allowed\"}"
+}

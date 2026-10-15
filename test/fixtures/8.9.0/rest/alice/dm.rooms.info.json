@@ -1,0 +1,81 @@
+{
+  "room": {
+    "_id": "6ad145a408d9d91a69c55aed",
+    "t": "d",
+    "usernames": [
+      "alice",
+      "bob"
+    ],
+    "usersCount": 2,
+    "msgs": 3,
+    "ts": "2026-10-15T21:29:08.274Z",
+    "uids": [
+      "B3mFABPgFaLqcu9Tt",
+      "tpLGiapWGnoY74w3j"
+    ],
+    "encrypted": true,
+    "default": false,
+    "ro": false,
+    "sysMes": true,
+    "_USERNAMES": [
+      "alice",
+      "bob"
+    ],
+    "_updatedAt": "2026-10-15T21:29:11.998Z",
+    "e2eKeyId": "bc42713e-f2e0-4b46-ab11-2e0f7ed699cd",
+    "lastMessage": {
+      "rid": "6ad145a408d9d91a69c55aed",
+      "ts": "2026-10-15T21:29:11.973Z",
+      "content": {
+        "algorithm": "rc.v2.aes-sha2",
+        "kid": "bc42713e-f2e0-4b46-ab11-2e0f7ed699cd",
+        "iv": "NbzDlCdg1iY6CUIm",
+        "ciphertext": "uKtq1AUdrqDXFbTEeIqPwXfOeMSneRPquHFlSWlEKAxoF+/hZrxIbyCNKF6rREib3YZHKI/4a2oMNGpmdWWHLnUqMbAAObRDt1W+KKHC5mqR53FtYOVflv6cqKY+YHvcIZFa29VobFatTcHLytVLLDSufUG3CjHpl0JLCPBYOe44BQY8qmXKniwcGK2Dtr3NDLvyHNuoNaDYgZNpw9puFOHqXn4YvWVnTuk+frkmiXwZQ1elCx03SudYDvpce92gM9uny6QnqySIbGCfJnPonfu79vtfJ0RBVQ6PipHwHjowg9A4YXsEW6320PFQbNoxxrewciLkI1eOdPewlGEn1ebN2bcfTmZhaNqoWoy+1FgB8tDgORqbOhrqP9KcZtyk27HaiIoPjJRnKZ5UUbSv0ZYlJ1txj6fFTmczurfC2R+mxE+UmgHjym0McVWAHQKszAdrTcWlXKt7jFSboYvJLjn27Br9lwXkLekp/SoWivv8FlKSGNc4rFhFOFjaotlUSjJrKG9fvfJr63ZoQvtCV/YvkASzh0XgF4y85iWhHHn+sxPb9aEoxEz2gLahaIREF+dEjTAc1phe9IWAdEWUBEjTWCh0NBSvLEMnVP0L1vqY+JpTdbkwtRMEFUI/Or20Xuj90i3n8Evzdp1a6rGTuGdL0uBDn31XG/akkauqox92igDZ4RBIb9zvCbHVfEUmk/ZT9OMjzoKg5CAFYzVBAtOpBgCAblojqUE5/BF/CeOnUNX3fUHffz3PpwCALmYLqsGOb6uglrYtHWIw5IEcjlopdaeL8LzLs10pw8ZszL1BIHU85vMDMO5NLbf5jReJKxwjaCfihWybviaal+s5f5oqrcv6CMEno0xHEYrk94zU1FDkeWMd6ujWBtsDSlvUDMiL6YsM6b2ib9bSMBUNAAZ27kku8JsYCYzfjvavQyDwfx/tensSWByRUcyAyfm6dUqQ0Rbg1m+293brVjegEtsVGQk/c0NowfejqubxjU2Iwi9DbhTBMFraQaaNevcrKWAcZu2rntMJZRewWc+/ZJPID4uC5WxWFrYc8HUansTLjOv5o2jKnQfa165wgC+XWWYqNcM="
+      },
+      "t": "e2e",
+      "msg": "",
+      "groupable": false,
+      "file": {
+        "_id": "6ad145a708d9d91a69c55af4",
+        "name": "09f027f47ecd92b1248c9a250cc50a05236b1fbc6a2761d7fcf7510e3a523492",
+        "type": "application/octet-stream",
+        "size": 78,
+        "format": "",
+        "typeGroup": "application"
+      },
+      "files": [
+        {
+          "_id": "6ad145a708d9d91a69c55af4",
+          "name": "09f027f47ecd92b1248c9a250cc50a05236b1fbc6a2761d7fcf7510e3a523492",
+          "type": "application/octet-stream",
+          "size": 78,
+          "format": "",
+          "typeGroup": "application"
+        }
+      ],
+      "attachments": [
+        {
+          "title": "09f027f47ecd92b1248c9a250cc50a05236b1fbc6a2761d7fcf7510e3a523492",
+          "title_link": "/file-upload/6ad145a708d9d91a69c55af4/09f027f47ecd92b1248c9a250cc50a05236b1fbc6a2761d7fcf7510e3a523492",
+          "title_link_download": true,
+          "type": "file",
+          "format": "file",
+          "size": 78,
+          "fileId": "6ad145a708d9d91a69c55af4"
+        }
+      ],
+      "u": {
+        "_id": "tpLGiapWGnoY74w3j",
+        "username": "bob",
+        "name": "Bob Brown"
+      },
+      "_id": "5RQjj62jiWqutoZGL",
+      "_updatedAt": "2026-10-15T21:29:11.983Z",
+      "mentions": [],
+      "channels": [],
+      "urls": []
+    },
+    "lm": "2026-10-15T21:29:11.973Z"
+  },
+  "success": true
+}

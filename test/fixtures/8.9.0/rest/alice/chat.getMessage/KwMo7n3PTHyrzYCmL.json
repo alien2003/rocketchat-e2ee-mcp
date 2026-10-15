@@ -1,0 +1,29 @@
+{
+  "message": {
+    "_id": "KwMo7n3PTHyrzYCmL",
+    "rid": "6ad1459708d9d91a69c55ade",
+    "e2eMentions": {
+      "e2eUserMentions": [],
+      "e2eChannelMentions": []
+    },
+    "content": {
+      "algorithm": "rc.v2.aes-sha2",
+      "kid": "d115000d-e8e5-46c6-88df-6ef67d741ec6",
+      "iv": "6ZXzn7iOFbe9weXU",
+      "ciphertext": "SR2mHo5ZWkeI5pyHvcOR2t3Z+WLhuj6GfyNJw3gTksLho74OmIqBB9stHQ+7aaQ5W7650bX6VcQJn4yuizB95QFfWB5RrFDVHgLJuYTWCx67QMo2u8eXNuoWvi44CtjWgEyvYkdT1bVP8C3dsbH/LKlxkCMytg0vhLmT7dWDz2OCGz3UPdEZfoLFsj74Xr2n0Eh5pAp++J25Cjvl+qf796a3mpanSklVteDC9ZFRFViF+Ldm48be6rNXhovpugeZwavFV/ND5dsJ9d8+Vkw865f331Beppd0xu4LaztpP8x0DKHr42QsdL+yDBZXv4Yz0LSCor+uHvLqS6qofIAMI7glZFiU2z4DlyT15tIgvkV5LTSIMptsNvnt"
+    },
+    "t": "e2e",
+    "ts": "2026-10-15T21:28:59.789Z",
+    "u": {
+      "_id": "B3mFABPgFaLqcu9Tt",
+      "username": "alice",
+      "name": "Alice Anders"
+    },
+    "msg": "",
+    "_updatedAt": "2026-10-15T21:28:59.796Z",
+    "mentions": [],
+    "channels": [],
+    "urls": []
+  },
+  "success": true
+}

@@ -1,0 +1,78 @@
+{
+  "room": {
+    "_id": "6ad1459708d9d91a69c55ade",
+    "fname": "handbook-mva1woss",
+    "_updatedAt": "2026-10-15T21:31:50.943Z",
+    "topic": "",
+    "broadcast": false,
+    "encrypted": true,
+    "name": "handbook-mva1woss",
+    "t": "p",
+    "msgs": 13,
+    "usersCount": 3,
+    "u": {
+      "_id": "B3mFABPgFaLqcu9Tt",
+      "username": "alice",
+      "name": "Alice Anders"
+    },
+    "ts": "2026-10-15T21:28:55.952Z",
+    "ro": false,
+    "default": false,
+    "sysMes": true,
+    "e2eKeyId": "db242528-407d-4ef8-b23a-d3192f9baabc",
+    "lastMessage": {
+      "rid": "6ad1459708d9d91a69c55ade",
+      "ts": "2026-10-15T21:31:50.917Z",
+      "content": {
+        "algorithm": "rc.v2.aes-sha2",
+        "kid": "db242528-407d-4ef8-b23a-d3192f9baabc",
+        "iv": "WtIDVWX7Qkrh0yJj",
+        "ciphertext": "eRGZ94uMgAVUHNPaMMh8Pj3V/6cuI5O/QKzA12XXvMBAFaJzOizmQkLOcXoS/VgknTFjcpV/nZjN3lxjy9NlXoytHp2C2iZnv1PQ6z3KQL+bkWGMS1+nr2f/3jThsA1qoA6IAj9DlYMFnrrTOj7FJM42sKTiorF6mVPnNBWAJxCnetc1LQITdRLtyUwl7hhLkQasoE0yiD9OH9Yly9B2ai5GFOi1fxz59eLwzgwE1/HztmJu8KAdTRwf5N8Hhvi2z4NMHbMCJlT3hFuVXWN8Uq/7Yz9WxxQZXhvUHn1wY4zg4FNeEaoRVdYahyR9MJSH+18WSNwfAXMGMMZ4BjZ9SVYgsaTydp/reEeEfqBtAUl4lM2pdixkKHbZ9WUEKjhtyAgBYi3QPFCMcJ+EryqxXdTzWPjzrT8wbB4tndPT9wSzkgAXP91ge4/+Rt0hB1EEybo+V5Y3sJzizFid3gaOBq5slUxLa2rEaIi6OOu0NueuakTAgeA0i33dl2T16JV2GZcbxZGxaICst2nWBm+PzscBf7Rv5qOwAc7xeaGtp2LL0Ocnpuv7iO6rGxHxivI8IXuYB3+QDFhtMCaii5HxAIu0x6o0G+7wt9CsPDa5xP7ZgwnAwyLQ7/REU5E00tFLtUKEaOHiNcelA2GfGmFMau/NFlvd085WsSP3rdRChc9y3J17UtReShU7HGL6Hhd9EsTMPMyTVx6nKsUlBSIlMMvXUQhSK71f21VUFUn6ziVINZjR6ZnIAbbpuYSW3CR7QnOQwCAXZ8eWbEzhc29JJppKoItvzqS4t3m4/g6BcqEARPLCiE6+i/O+EA4NoH2tQlZZ0vMk48QgrB1N1288qpViFkbNH/pydmL+h1kGVsDtj5sZlXtZ4YyQgif8wRcDp/WLTZp0h++pYbup0lfJSw0Y3kKfJzJFHFbVq7UB4qtJbs1F7C1FBCdfV1w0e9fkCSrJlUY2e6cu2pir3hcs1TqigZVDP3g09xZyZTm3b1JF/yshIFOBDez+4XVP6OmCts+zpN//bvpSp1hPj8V6JSxNFUrjTp6hvuo0njPaZxaSMceoywUD3DQl1kY="
+      },
+      "t": "e2e",
+      "msg": "",
+      "groupable": false,
+      "file": {
+        "_id": "6ad1464608d9d91a69c55b09",
+        "name": "01b57873d86d1ded7e34da7a0ad736d91c63690ca4338a7d9f9d49ac1c9f40a9",
+        "type": "application/octet-stream",
+        "size": 51,
+        "format": "",
+        "typeGroup": "application"
+      },
+      "files": [
+        {
+          "_id": "6ad1464608d9d91a69c55b09",
+          "name": "01b57873d86d1ded7e34da7a0ad736d91c63690ca4338a7d9f9d49ac1c9f40a9",
+          "type": "application/octet-stream",
+          "size": 51,
+          "format": "",
+          "typeGroup": "application"
+        }
+      ],
+      "attachments": [
+        {
+          "title": "01b57873d86d1ded7e34da7a0ad736d91c63690ca4338a7d9f9d49ac1c9f40a9",
+          "title_link": "/file-upload/6ad1464608d9d91a69c55b09/01b57873d86d1ded7e34da7a0ad736d91c63690ca4338a7d9f9d49ac1c9f40a9",
+          "title_link_download": true,
+          "type": "file",
+          "format": "file",
+          "size": 51,
+          "fileId": "6ad1464608d9d91a69c55b09"
+        }
+      ],
+      "u": {
+        "_id": "B3mFABPgFaLqcu9Tt",
+        "username": "alice",
+        "name": "Alice Anders"
+      },
+      "_id": "tRqkB7n8AYzp3tHjw",
+      "_updatedAt": "2026-10-15T21:31:50.928Z",
+      "mentions": [],
+      "channels": [],
+      "urls": []
+    },
+    "lm": "2026-10-15T21:31:50.917Z"
+  },
+  "success": true
+}

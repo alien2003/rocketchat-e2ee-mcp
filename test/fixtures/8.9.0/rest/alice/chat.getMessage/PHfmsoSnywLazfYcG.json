@@ -1,0 +1,29 @@
+{
+  "message": {
+    "_id": "PHfmsoSnywLazfYcG",
+    "rid": "6ad1459708d9d91a69c55ade",
+    "e2eMentions": {
+      "e2eUserMentions": [],
+      "e2eChannelMentions": []
+    },
+    "content": {
+      "algorithm": "rc.v2.aes-sha2",
+      "kid": "db242528-407d-4ef8-b23a-d3192f9baabc",
+      "iv": "jfKwq2FQlDaJml77",
+      "ciphertext": "GRU4/445BJWkrPaZTtkqfg2yhcRxMr0okhPnZT/YD1Z3WZcNSuAkXU0yhTivkhk4HjkGXWFyMOKyaVQF3N4CNgBD1ZCoPXTZQF5pTFKHb0KcN0Fi33Zq6ahRz9s9KVqaeUQBDvR1LeFasrHC"
+    },
+    "t": "e2e",
+    "ts": "2026-10-15T21:31:37.334Z",
+    "u": {
+      "_id": "6ad1458e08d9d91a69c55ab9",
+      "username": "rcadmin",
+      "name": "RC Admin"
+    },
+    "msg": "",
+    "_updatedAt": "2026-10-15T21:31:37.341Z",
+    "mentions": [],
+    "channels": [],
+    "urls": []
+  },
+  "success": true
+}

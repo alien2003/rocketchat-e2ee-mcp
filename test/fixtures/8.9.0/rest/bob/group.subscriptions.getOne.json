@@ -1,0 +1,32 @@
+{
+  "subscription": {
+    "_id": "6ad1459708d9d91a69c55ae0",
+    "open": true,
+    "alert": false,
+    "unread": 0,
+    "userMentions": 0,
+    "groupMentions": 0,
+    "ts": "2026-10-15T21:28:55.952Z",
+    "rid": "6ad1459708d9d91a69c55ade",
+    "name": "handbook-mva1woss",
+    "fname": "handbook-mva1woss",
+    "t": "p",
+    "u": {
+      "_id": "tpLGiapWGnoY74w3j",
+      "username": "bob",
+      "name": "Bob Brown"
+    },
+    "_updatedAt": "2026-10-15T21:31:51.505Z",
+    "ls": "2026-10-15T21:31:51.505Z",
+    "lr": "2026-10-15T21:31:50.179Z",
+    "oldRoomKeys": [
+      {
+        "e2eKeyId": "d115000d-e8e5-46c6-88df-6ef67d741ec6",
+        "ts": "2026-10-15T21:31:35.769Z",
+        "E2EKey": "d115000d-e8e5-46c6-88df-6ef67d741ec6s7C3YF8ZigwYu/D8L+rGxxUbI/iF+xCRnGSz7KZbXRCEZH2jbBUN1mqEwLa7EICY8ZSk+5xQCa+mQE9ybDxQTV1j7edcl5MYk9S5w7Mk8seQnop9jkbCpI9DssKMqmEM7jsi7441AvstKBUHjQI6ZmOr3UQK360acst+1cL4B75OrbVrMb3LdRfwPaou+mtB4LEc3z1y3zwOyTFgHDRk+ebFDUBonISiCihDuSBIyqbQEBJO01l8TS4i9PEIf6pBuoIOPu3c5ni6OXdc0+Wap7qC6HRzKAquXu86evO31SSjFwqt0Z9rWCfvSKknMpSCNeZEUvdh/E4B9Nv/4j7WZA=="
+      }
+    ],
+    "E2EKey": "db242528-407d-4ef8-b23a-d3192f9baabcZPUKztQuwsiEfphzFPxnc0efKhlXYcXtw2D5DT3fRJZ9KIiTim5p7vCu85NNFq0QasYrIwM0Ap05YqJ4CczKtUIIy3B/xMELBMaUlMRhrI7tdhVYzYCFpb98PvFf+dX5F3AWy8xBZUuEHtbxU/H0avN+bQquKzr/GTuvB5/hW/dLal6JXtKxk+uiN/OuKZiwAF1lLsJ8c2Jadd9xxNh0zKfDOSjEGD9Yn8KXYd6ojrdcjOZUQLWyiwCqFFsORfSBy50wHuEVk8zlPVbMrNCA7qMJxSXUhZktOammH99hkpRD7rzAG8xc8mlznj1h8KSi593cznW0h11EyOswqelLHg=="
+  },
+  "success": true
+}

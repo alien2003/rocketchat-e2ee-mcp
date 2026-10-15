@@ -1,0 +1,150 @@
+[
+  {
+    "_id": "6ad145a208d9d91a69c55ae9",
+    "name": "91ee2eb835a4493a69ad9ac2a8db9279f3fa0251d0ef0326973e97288eaff4ec",
+    "size": {
+      "$numberInt": "96"
+    },
+    "type": "application/octet-stream",
+    "rid": "6ad1459708d9d91a69c55ade",
+    "userId": "B3mFABPgFaLqcu9Tt",
+    "content": {
+      "algorithm": "rc.v2.aes-sha2",
+      "kid": "d115000d-e8e5-46c6-88df-6ef67d741ec6",
+      "iv": "1Rfdjo9H2KZPFEap",
+      "ciphertext": "ov9Lmz/VqRjAxfP8YhgwhLZNJSVa1Vx9g2btCA8cvzn7BPpDXqMSItLMMAWQXEx0PArojch0j6sJLn/0aUrR92LiE2bp8UnbWcpTdFSDoFMassg1y4jjRYA2As/5fKDu3wTow6Md8pRqGNdx2WFYtKob7Ujl7vzYMWuYexbtlIUpxQRjzxeEENLTO+4vbmpd3WBG+GTIFL8H3sXzobEPMaluyIlQAf4O6gC5FWmrIUzeGiM8rOSx4nIgXH8Ov5l7E7Vvnc1cu7DOQCcT2B0mFs1pGHBSHjdnrNCwp3/l05RHr406pEHIXvgxJJr4tt6e90a5m8Il3zG5Y+fjhyPw8d9PRj3+LcEZA5gNJdUPHj8LaTj+h+Y3DB6zUUjz+eZWpfVfTf2EmUkj6CGHUiBkOaQGe/zFwBzPAP2UQQO7qjTTEHhmaj8f4lGAUUpMh+nkSnmZkYb8vZmVoDZ0tHJuRA=="
+    },
+    "store": "GridFS:Uploads",
+    "_updatedAt": {
+      "$date": {
+        "$numberLong": "1792099747146"
+      }
+    },
+    "complete": true,
+    "etag": "cJwdRdGmaE5KorkCB",
+    "path": "/file-upload/6ad145a208d9d91a69c55ae9/91ee2eb835a4493a69ad9ac2a8db9279f3fa0251d0ef0326973e97288eaff4ec",
+    "progress": {
+      "$numberInt": "1"
+    },
+    "token": "5BEbA9a99a",
+    "uploadedAt": {
+      "$date": {
+        "$numberLong": "1792099746986"
+      }
+    },
+    "uploading": false,
+    "url": "http://localhost:3000/ufs/GridFS:Uploads/6ad145a208d9d91a69c55ae9/91ee2eb835a4493a69ad9ac2a8db9279f3fa0251d0ef0326973e97288eaff4ec",
+    "typeGroup": "application"
+  },
+  {
+    "_id": "6ad145a308d9d91a69c55aeb",
+    "name": "ce98cb39d20650bfd694c94e45d5e15a1398ef00e16a000abf20cf49e61edd9d",
+    "size": {
+      "$numberInt": "68"
+    },
+    "type": "application/octet-stream",
+    "rid": "6ad1459708d9d91a69c55ade",
+    "userId": "tpLGiapWGnoY74w3j",
+    "content": {
+      "algorithm": "rc.v2.aes-sha2",
+      "kid": "d115000d-e8e5-46c6-88df-6ef67d741ec6",
+      "iv": "xokC3UVz3Q4EyBjJ",
+      "ciphertext": "2h7tEaMzPf2NIersL258e3onoe7mfDNaeovA6ssD7rlhHInt22aLXvtSOqK4uBvj+xEqsLEGN8O8/1hVD0VQ13avBHNvu1wVMgBZaWDJU4gu/E/zOjqZBMOfY3agFMDQiTi4FjmFbmaZpvjG+4sU5uhQCZraSqs8Ki+SxnYKbCI42MiXUnHU0k21RUwKTbj+lh+N8/eHu1FR2E4NePX87QhLmPMr7sZofwRRT6DVT0O5DxDXnl8HLKf8xGHSBEEZPs063o5HEvYHV+NpXa7JIIVFqhlo8ktxz1XUBH9x+Z2S1wPJzxE0eui5YW0BZI+gLfr+9I0EDC4xkujq4kHcRgBI5P5iBpI8E6vKqymBTxOqyuGh7NXnVg6p/+hFtKUPg8DwdG5qwr0E0JqqnDg2zlUqYnlzcI7/0UaBS20L5m1Gm2qfwqtObz0fVfdnVgEWxsbqzA=="
+    },
+    "store": "GridFS:Uploads",
+    "_updatedAt": {
+      "$date": {
+        "$numberLong": "1792099747335"
+      }
+    },
+    "complete": true,
+    "etag": "ogHHopPijJzvqzPwT",
+    "path": "/file-upload/6ad145a308d9d91a69c55aeb/ce98cb39d20650bfd694c94e45d5e15a1398ef00e16a000abf20cf49e61edd9d",
+    "progress": {
+      "$numberInt": "1"
+    },
+    "token": "89E82b991B",
+    "uploadedAt": {
+      "$date": {
+        "$numberLong": "1792099747267"
+      }
+    },
+    "uploading": false,
+    "url": "http://localhost:3000/ufs/GridFS:Uploads/6ad145a308d9d91a69c55aeb/ce98cb39d20650bfd694c94e45d5e15a1398ef00e16a000abf20cf49e61edd9d",
+    "typeGroup": "application"
+  },
+  {
+    "_id": "6ad145a708d9d91a69c55af4",
+    "name": "09f027f47ecd92b1248c9a250cc50a05236b1fbc6a2761d7fcf7510e3a523492",
+    "size": {
+      "$numberInt": "78"
+    },
+    "type": "application/octet-stream",
+    "rid": "6ad145a408d9d91a69c55aed",
+    "userId": "tpLGiapWGnoY74w3j",
+    "content": {
+      "algorithm": "rc.v2.aes-sha2",
+      "kid": "bc42713e-f2e0-4b46-ab11-2e0f7ed699cd",
+      "iv": "I/Dt/P4JhSp+2idM",
+      "ciphertext": "52bmKiUOwTd5sqjfJKHqsl1dxTcL/LLM89PAm3k3SIoJbmk5ADblpukl7F3wL6fsnr+s5PtF5vFvI/1mRUp+i2rjmct06T0rFxQLz4uPMEGSawIciXTH8ikN9cA8H5MUbut7hMLtl1NC283P+YptVl9zdX7e3KMlEBsmW3I9h/Pbq0Ea6XkC/T8Taa+1z56FvHJQAYfigLZDlLvjTyccYTqpqtb9/DtgEc15ev1HqdACzwaSB3KdnuqZZ/n2Z7jDgaTWt6E69tenk/sw7hzYAbKyyvp9ySIm47c2aDOZftALIcM4k/5BPFj1EtRAfi38KMMHF5PyQxOrLzpFgd7OsQ94VDQ7uBQb1u/y+hjP4Wq3ZTJVZ/HKdpsmyras3YjEJMDongXtGsppibSESuadu9XefdZxDGSSa4Wz33dUrds1iCsqvX3c0FV/K1aEZv13QofIh1yBJSAeYrqI4e8="
+    },
+    "store": "GridFS:Uploads",
+    "_updatedAt": {
+      "$date": {
+        "$numberLong": "1792099752002"
+      }
+    },
+    "complete": true,
+    "etag": "9pmqX3z5WcrgwPyyb",
+    "path": "/file-upload/6ad145a708d9d91a69c55af4/09f027f47ecd92b1248c9a250cc50a05236b1fbc6a2761d7fcf7510e3a523492",
+    "progress": {
+      "$numberInt": "1"
+    },
+    "token": "C8e838Ea4b",
+    "uploadedAt": {
+      "$date": {
+        "$numberLong": "1792099751923"
+      }
+    },
+    "uploading": false,
+    "url": "http://localhost:3000/ufs/GridFS:Uploads/6ad145a708d9d91a69c55af4/09f027f47ecd92b1248c9a250cc50a05236b1fbc6a2761d7fcf7510e3a523492",
+    "typeGroup": "application"
+  },
+  {
+    "_id": "6ad1464608d9d91a69c55b09",
+    "name": "01b57873d86d1ded7e34da7a0ad736d91c63690ca4338a7d9f9d49ac1c9f40a9",
+    "size": {
+      "$numberInt": "51"
+    },
+    "type": "application/octet-stream",
+    "rid": "6ad1459708d9d91a69c55ade",
+    "userId": "B3mFABPgFaLqcu9Tt",
+    "content": {
+      "algorithm": "rc.v2.aes-sha2",
+      "kid": "db242528-407d-4ef8-b23a-d3192f9baabc",
+      "iv": "jSpZ0qZ4osXykANe",
+      "ciphertext": "uNcxJBECE7WGe4vh2fbG5PWepAp5YccIOlwiX2sBPocDPDoP99HauTwddcQQsvOCXh23Ezx6QD7F4zQFLV7rQbPZ9RCTz+ea5RLWKjs6TbfGyd2SXfIh9BKmqk+pY4wUyh4mkoXngZElau9yvxrTJUS5TzcjEihbnvRfGML3GleRGQExX/H7NdDH6nLe6TA39Bj3ugCm9qIMfvdVx4hXXPBYxoppj9uM9u9f+Pqzxv3tIDxyMPymM9RXgfFvFT3qhfQbx87SYw4B6rdhX6CnxxWDCuo5r6Gs9sT+gMEwSOyhJCjWrjbTcyUy0gec5XR5gUkVNo69Ys5A9l/ocw5p40Dvl1NDc2gf/7rfFQ7logU4xuyw8669nQfbMZsNjNdDzyqT6MPOnd1YjhafC7uVkGe0ml7b8qdxUJEvX91fETGcgQP4keKrQtwfIEV4Y26VZ1VEcmGW9X/MpK77tg=="
+    },
+    "store": "GridFS:Uploads",
+    "_updatedAt": {
+      "$date": {
+        "$numberLong": "1792099910946"
+      }
+    },
+    "complete": true,
+    "etag": "WEE9uFeT7LJJk7nSy",
+    "path": "/file-upload/6ad1464608d9d91a69c55b09/01b57873d86d1ded7e34da7a0ad736d91c63690ca4338a7d9f9d49ac1c9f40a9",
+    "progress": {
+      "$numberInt": "1"
+    },
+    "token": "F9094869D9",
+    "uploadedAt": {
+      "$date": {
+        "$numberLong": "1792099910879"
+      }
+    },
+    "uploading": false,
+    "url": "http://localhost:3000/ufs/GridFS:Uploads/6ad1464608d9d91a69c55b09/01b57873d86d1ded7e34da7a0ad736d91c63690ca4338a7d9f9d49ac1c9f40a9",
+    "typeGroup": "application"
+  }
+]

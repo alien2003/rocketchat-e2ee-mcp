@@ -1,0 +1,34 @@
+{
+  "message": {
+    "_id": "4qNPPe24xJxtMWePF",
+    "rid": "6ad1459708d9d91a69c55ade",
+    "e2eMentions": {
+      "e2eUserMentions": [],
+      "e2eChannelMentions": []
+    },
+    "content": {
+      "algorithm": "rc.v2.aes-sha2",
+      "kid": "d115000d-e8e5-46c6-88df-6ef67d741ec6",
+      "iv": "alYuALj+m2e9D0x6",
+      "ciphertext": "bxX2cpam5UDULnl2xp6l56czVOKWw3x5xZbVW83Ed6oXWWsCgZldlLGboNhXDB8L7zPb2FfR591e+r2ZG0fdkOZGOzsFxc2EG7weRgBOZSPMXxe9"
+    },
+    "t": "e2e",
+    "ts": "2026-10-15T21:29:03.789Z",
+    "u": {
+      "_id": "B3mFABPgFaLqcu9Tt",
+      "username": "alice",
+      "name": "Alice Anders"
+    },
+    "msg": "",
+    "_updatedAt": "2026-10-15T21:29:04.855Z",
+    "mentions": [],
+    "channels": [],
+    "urls": [],
+    "editedAt": "2026-10-15T21:29:04.854Z",
+    "editedBy": {
+      "_id": "B3mFABPgFaLqcu9Tt",
+      "username": "alice"
+    }
+  },
+  "success": true
+}

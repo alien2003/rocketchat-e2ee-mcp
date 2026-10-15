@@ -1,0 +1,29 @@
+{
+  "subscription": {
+    "_id": "6ad1462808d9d91a69c55af8",
+    "open": true,
+    "alert": false,
+    "unread": 0,
+    "userMentions": 0,
+    "groupMentions": 0,
+    "ts": "2026-10-15T21:31:20.165Z",
+    "rid": "6ad1459708d9d91a69c55ade",
+    "name": "handbook-mva1woss",
+    "fname": "handbook-mva1woss",
+    "t": "p",
+    "u": {
+      "_id": "6ad1458e08d9d91a69c55ab9",
+      "username": "rcadmin",
+      "name": "RC Admin"
+    },
+    "inviter": {
+      "_id": "B3mFABPgFaLqcu9Tt",
+      "username": "alice",
+      "name": "Alice Anders"
+    },
+    "_updatedAt": "2026-10-15T21:31:51.514Z",
+    "ls": "2026-10-15T21:31:51.514Z",
+    "E2EKey": "db242528-407d-4ef8-b23a-d3192f9baabcBdiYkiCymufwiFQSquWCmxr6QtO8Dd2O9bG/klz3kTQ43dhPzwDgYczzHuCNJfCg2a8uHK5engn0Tzi/mtVYZ8vCQHPfAWdtG18ETPPN6wUXCq0JU3AkZe24eF5JqgCMADPzYLrPrTjhjm8mWFGAcdPF6yW+wDfvWJdDTcQoZ7qPwV0LWLv0UB2NmpQU+a/UKL24s7jY98obFEyN0OMJuq3UnFqo6anYgCBXkEfKzwPGsmbTzhxZOfCkejPObuo1H5bFfetfMNedgq6cv635lm8JfC7+UCOkR13kbgRhZiJorC9B/9xRfdeNgk4VJvyElFBKjCteWKwOhOTUf5szsQ=="
+  },
+  "success": true
+}

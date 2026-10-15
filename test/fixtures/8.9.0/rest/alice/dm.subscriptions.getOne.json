@@ -1,0 +1,23 @@
+{
+  "subscription": {
+    "_id": "6ad145a408d9d91a69c55aee",
+    "rid": "6ad145a408d9d91a69c55aed",
+    "u": {
+      "_id": "B3mFABPgFaLqcu9Tt",
+      "username": "alice"
+    },
+    "_updatedAt": "2026-10-15T21:29:11.987Z",
+    "alert": true,
+    "fname": "Bob Brown",
+    "groupMentions": 0,
+    "name": "bob",
+    "open": true,
+    "t": "d",
+    "ts": "2026-10-15T21:29:08.296Z",
+    "unread": 2,
+    "userMentions": 0,
+    "E2EKey": "bc42713e-f2e0-4b46-ab11-2e0f7ed699cdD7MUaftZ9NYY80qwNlial0suMwnr0/vp3iwe/fXfz4/k7pnyeBsOCcNwLAIgMODh/SftP0M4PU99QBZShfHyBlNpZLtDfQgG6zJEJTZxeGFCUttoahAar4lJU0W0VmFeqGG4Uy6SJL0ne77zhUWiN7eNRDKqnZPyGiZRfZNzMSY7qkoa7YAbbn+6BQsF0fsNUFCWwOskoCCkmxgZ1h4Jr1cf9JfO99vK7TzRBJyHftwohdPt3bw6kLZJ4/qlkeygGyhNUUjS6UziQgCYoPRgiMlR/hVPmeew2+fFQhatYpFkKciDrpP8PL17XPqiOHpESpaET68JCOVoEL6wkUv7Aw==",
+    "ls": "2026-10-15T21:29:09.948Z"
+  },
+  "success": true
+}

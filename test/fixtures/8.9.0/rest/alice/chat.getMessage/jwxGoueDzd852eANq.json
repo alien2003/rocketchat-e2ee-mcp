@@ -1,0 +1,30 @@
+{
+  "message": {
+    "_id": "jwxGoueDzd852eANq",
+    "rid": "6ad1459708d9d91a69c55ade",
+    "tmid": "Zd97mTM23F4efdEg8",
+    "e2eMentions": {
+      "e2eUserMentions": [],
+      "e2eChannelMentions": []
+    },
+    "content": {
+      "algorithm": "rc.v2.aes-sha2",
+      "kid": "db242528-407d-4ef8-b23a-d3192f9baabc",
+      "iv": "qDhitEsjSmPsiRah",
+      "ciphertext": "iMQVyYNN8+deWzcN8Ff/GxjzLKu+mq1Ln+sF9xi4DuNdn0m4+0XhPb//v1nB4GlYoWUREmSXSwqbEkugOhRZI/VH1VujtvTCw9KJH/ZWlUWWC2Keploqif6J5Ae1"
+    },
+    "t": "e2e",
+    "ts": "2026-10-15T21:31:50.166Z",
+    "u": {
+      "_id": "tpLGiapWGnoY74w3j",
+      "username": "bob",
+      "name": "Bob Brown"
+    },
+    "msg": "",
+    "_updatedAt": "2026-10-15T21:31:50.174Z",
+    "mentions": [],
+    "channels": [],
+    "urls": []
+  },
+  "success": true
+}

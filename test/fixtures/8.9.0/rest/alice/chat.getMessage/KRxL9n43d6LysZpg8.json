@@ -1,0 +1,55 @@
+{
+  "message": {
+    "_id": "KRxL9n43d6LysZpg8",
+    "rid": "6ad1459708d9d91a69c55ade",
+    "ts": "2026-10-15T21:29:07.303Z",
+    "content": {
+      "algorithm": "rc.v2.aes-sha2",
+      "kid": "d115000d-e8e5-46c6-88df-6ef67d741ec6",
+      "iv": "BDA9OuH/qR9h34iY",
+      "ciphertext": "sMYb2qmz4WWhIl0sB4e4u/I/dr2xptLZfnMs8uisj08DcM2CnrcsswaabzvmZPy2b0muxnLc8bWgftLPAp6mWgu7qdq3+LVvOE6uoi5rYQd/XRVZU48RGXvgBe3XY/wCjmwRgWQRDKWq0Q3vmgAJPyqGneXd1KsVewpFz4Pyihb+oQqmHiMgNRDibp8O0z7VFRuxK2zH8ro1a5POTHAsAf4bFfDT2z9BTRAkdrjm0NO35kyZDjGcM3OyF35UhIOoQUt4EeE8nznSHXXP1QkY+y8YPogbOm89TbZjz2j/7yCoGoYbEMuD5FlN+ukPjO6RFHb7LBF2GtvqQNXA2rdfitFSgDswNVRlqn7kvcI3x1JM57SvtXO31o0U6OjlqObo7SCyGh/tktp2bHZ7mMATQQH0pQxprT1IfAaXJjWTpWQnQRwS+/4P/zQcsUnWOhUUFgo6VwIR/B0OPA/Ab1/T5JYdFTEs5Ir+IkAnDtzIfsZYZ4iYOicGH1wxtGLzTrjGddSjA9xjunyTsm94m3PzqJME8k0H0wktwI45rOTqgt/NbpuUDQh7eWcgkv1GndvUmpNEBbiT7w9bL6stv4zVXTyOpT7FBycLAbDNTSW4FaTrBsr8EQr1tPmHCLtBuAr19+UKhlxjYO7cvaQWmQLGUIIUbl+kODWsp/rGqvhPGL1vUU/S9f1w8rXTjYHgXaR9GXWER2o/rN4OFM24rFsUsnLyt0gSF7yo+xxmd/qc0mHSxNimdXjEGxKEufWLmsvsIeBWgqiWNGLuYZBa4nZ1fMmGBeq9tZpeXG0iOgfGsAq83CbIRwrygh1AeufUCEnV2ui/VSNa6C1COsiiZ8CdoCYpwAADCuiQXQOuvAHhMCRT4hygN7+ZKGV9HhEGBHS/HhyqzopcwGj3y7MwsonkWpXLzFo+fZGDoUnVj+jmB/HlwANt39TyZ1LbwM7xZUR1hBB4rbPadkl1nOkl2tq84JndpxmIR3gtzQVlReIfiBSq3KWVxap01JWWko8lVmS4funFH0qOI7c40MmRrFhXMYMPZPnD9mYeis2NP/KMSs5xk2nntDhQ4/8ueNIRJFyT9QuFMUj7b+hxyywcvlek/ClGmX6fuzTdZxnWaAtAKOUEO46erDW2zA/rvwRkjoFXvmLMRai21nNiwMSQTvKqQH8wUK+QFeTUUbCqIW/LB/TTibYdIWhBeVcxP80n0X/hDc8hBixVluuMdusClGXxAs5dLQAaPv0P/n+f6OyBXSxd3LlxkiuEu2IAVxHiYdvaFw=="
+    },
+    "t": "e2e",
+    "msg": "",
+    "groupable": false,
+    "file": {
+      "_id": "6ad145a308d9d91a69c55aeb",
+      "name": "ce98cb39d20650bfd694c94e45d5e15a1398ef00e16a000abf20cf49e61edd9d",
+      "type": "application/octet-stream",
+      "size": 68,
+      "format": "",
+      "typeGroup": "application"
+    },
+    "files": [
+      {
+        "_id": "6ad145a308d9d91a69c55aeb",
+        "name": "ce98cb39d20650bfd694c94e45d5e15a1398ef00e16a000abf20cf49e61edd9d",
+        "type": "application/octet-stream",
+        "size": 68,
+        "format": "",
+        "typeGroup": "application"
+      }
+    ],
+    "attachments": [
+      {
+        "title": "ce98cb39d20650bfd694c94e45d5e15a1398ef00e16a000abf20cf49e61edd9d",
+        "title_link": "/file-upload/6ad145a308d9d91a69c55aeb/ce98cb39d20650bfd694c94e45d5e15a1398ef00e16a000abf20cf49e61edd9d",
+        "title_link_download": true,
+        "type": "file",
+        "format": "file",
+        "size": 68,
+        "fileId": "6ad145a308d9d91a69c55aeb"
+      }
+    ],
+    "u": {
+      "_id": "tpLGiapWGnoY74w3j",
+      "username": "bob",
+      "name": "Bob Brown"
+    },
+    "_updatedAt": "2026-10-15T21:29:07.314Z",
+    "mentions": [],
+    "channels": [],
+    "urls": []
+  },
+  "success": true
+}

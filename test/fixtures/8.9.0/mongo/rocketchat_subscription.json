@@ -1,0 +1,238 @@
+[
+  {
+    "_id": "6ad1459708d9d91a69c55adf",
+    "open": true,
+    "alert": false,
+    "unread": {
+      "$numberInt": "0"
+    },
+    "userMentions": {
+      "$numberInt": "0"
+    },
+    "groupMentions": {
+      "$numberInt": "0"
+    },
+    "ts": {
+      "$date": {
+        "$numberLong": "1792099735952"
+      }
+    },
+    "rid": "6ad1459708d9d91a69c55ade",
+    "name": "handbook-mva1woss",
+    "fname": "handbook-mva1woss",
+    "t": "p",
+    "u": {
+      "_id": "B3mFABPgFaLqcu9Tt",
+      "username": "alice",
+      "name": "Alice Anders"
+    },
+    "ls": {
+      "$date": {
+        "$numberLong": "1792099910935"
+      }
+    },
+    "roles": [
+      "owner"
+    ],
+    "_updatedAt": {
+      "$date": {
+        "$numberLong": "1792099910935"
+      }
+    },
+    "lr": {
+      "$date": {
+        "$numberLong": "1792099910179"
+      }
+    },
+    "tunread": [
+      "Zd97mTM23F4efdEg8"
+    ],
+    "oldRoomKeys": [
+      {
+        "e2eKeyId": "d115000d-e8e5-46c6-88df-6ef67d741ec6",
+        "ts": {
+          "$date": {
+            "$numberLong": "1792099895769"
+          }
+        },
+        "E2EKey": "d115000d-e8e5-46c6-88df-6ef67d741ec6UPZ8ZXHkRoay2ptbJEH2HH5HeMnpv4S6HLtQxEfvnsdFhWl4zz4DjuJADQ/iMCpe8kBNqi1+sRSGlSCQGHqPWbMlvks2CEmP/zwBzlpmX92Y05gPl3J7YxwOZJeeWk4Tes4+YqTbld0A7p/3aEMToGFYhhIuMtaq6e95jDcIflDDF8zqYhVPOCbHy5rOncnTuepq+Yu7W9zRxlCkofXvPG8o1ZNrKr5Wsjh+gZ6pkdA3XkEUbgh0QcUY6sJtMfUw1msvDwSHR9xFo6zNtss40x/0+RvOB4vCsbYb4z7xMIzgmfJ3KFFLS8ge5Jv985C9/yNx9e5hto+BRxq3nichUw=="
+      }
+    ],
+    "E2EKey": "db242528-407d-4ef8-b23a-d3192f9baabcC9cvlG+1GekIKf7QBNwdbxfu9fwXhj9+oFcCR5s8HnPw8nwGfovRJF6X0IECQB4LTu1/TvhZ7nuC5C82FQBKdTbrqJhs9EvusbQDZsQ6P4axNXUoAi6ns0YUC5SXlk49F08Iy8YikyTpEIQxXl4KfyKh9fndqG8JNhcrUBIN1UfQvZ4g6nvN9L5zuLAD1L48rRW+nZN3POgruOhB0dUdx/qB9Jq1iujD9nJLJpTa4p6TCmeLBO28AK2lIH4tqEvyYzD1mY7KTDG9RZUxmZii75zMd/VA4Mm2c3Iov9iRRwSWXGWtYDZZ+QL6HrmIKjApaakawZ0iv7+ahU3HIkuQAw=="
+  },
+  {
+    "_id": "6ad1459708d9d91a69c55ae0",
+    "open": true,
+    "alert": false,
+    "unread": {
+      "$numberInt": "0"
+    },
+    "userMentions": {
+      "$numberInt": "0"
+    },
+    "groupMentions": {
+      "$numberInt": "0"
+    },
+    "ts": {
+      "$date": {
+        "$numberLong": "1792099735952"
+      }
+    },
+    "rid": "6ad1459708d9d91a69c55ade",
+    "name": "handbook-mva1woss",
+    "fname": "handbook-mva1woss",
+    "t": "p",
+    "u": {
+      "_id": "tpLGiapWGnoY74w3j",
+      "username": "bob",
+      "name": "Bob Brown"
+    },
+    "_updatedAt": {
+      "$date": {
+        "$numberLong": "1792099911505"
+      }
+    },
+    "ls": {
+      "$date": {
+        "$numberLong": "1792099911505"
+      }
+    },
+    "lr": {
+      "$date": {
+        "$numberLong": "1792099910179"
+      }
+    },
+    "oldRoomKeys": [
+      {
+        "e2eKeyId": "d115000d-e8e5-46c6-88df-6ef67d741ec6",
+        "ts": {
+          "$date": {
+            "$numberLong": "1792099895769"
+          }
+        },
+        "E2EKey": "d115000d-e8e5-46c6-88df-6ef67d741ec6s7C3YF8ZigwYu/D8L+rGxxUbI/iF+xCRnGSz7KZbXRCEZH2jbBUN1mqEwLa7EICY8ZSk+5xQCa+mQE9ybDxQTV1j7edcl5MYk9S5w7Mk8seQnop9jkbCpI9DssKMqmEM7jsi7441AvstKBUHjQI6ZmOr3UQK360acst+1cL4B75OrbVrMb3LdRfwPaou+mtB4LEc3z1y3zwOyTFgHDRk+ebFDUBonISiCihDuSBIyqbQEBJO01l8TS4i9PEIf6pBuoIOPu3c5ni6OXdc0+Wap7qC6HRzKAquXu86evO31SSjFwqt0Z9rWCfvSKknMpSCNeZEUvdh/E4B9Nv/4j7WZA=="
+      }
+    ],
+    "E2EKey": "db242528-407d-4ef8-b23a-d3192f9baabcZPUKztQuwsiEfphzFPxnc0efKhlXYcXtw2D5DT3fRJZ9KIiTim5p7vCu85NNFq0QasYrIwM0Ap05YqJ4CczKtUIIy3B/xMELBMaUlMRhrI7tdhVYzYCFpb98PvFf+dX5F3AWy8xBZUuEHtbxU/H0avN+bQquKzr/GTuvB5/hW/dLal6JXtKxk+uiN/OuKZiwAF1lLsJ8c2Jadd9xxNh0zKfDOSjEGD9Yn8KXYd6ojrdcjOZUQLWyiwCqFFsORfSBy50wHuEVk8zlPVbMrNCA7qMJxSXUhZktOammH99hkpRD7rzAG8xc8mlznj1h8KSi593cznW0h11EyOswqelLHg=="
+  },
+  {
+    "_id": "6ad145a408d9d91a69c55aee",
+    "rid": "6ad145a408d9d91a69c55aed",
+    "u": {
+      "_id": "B3mFABPgFaLqcu9Tt",
+      "username": "alice"
+    },
+    "_updatedAt": {
+      "$date": {
+        "$numberLong": "1792099751987"
+      }
+    },
+    "alert": true,
+    "fname": "Bob Brown",
+    "groupMentions": {
+      "$numberInt": "0"
+    },
+    "name": "bob",
+    "open": true,
+    "t": "d",
+    "ts": {
+      "$date": {
+        "$numberLong": "1792099748296"
+      }
+    },
+    "unread": {
+      "$numberInt": "2"
+    },
+    "userMentions": {
+      "$numberInt": "0"
+    },
+    "E2EKey": "bc42713e-f2e0-4b46-ab11-2e0f7ed699cdD7MUaftZ9NYY80qwNlial0suMwnr0/vp3iwe/fXfz4/k7pnyeBsOCcNwLAIgMODh/SftP0M4PU99QBZShfHyBlNpZLtDfQgG6zJEJTZxeGFCUttoahAar4lJU0W0VmFeqGG4Uy6SJL0ne77zhUWiN7eNRDKqnZPyGiZRfZNzMSY7qkoa7YAbbn+6BQsF0fsNUFCWwOskoCCkmxgZ1h4Jr1cf9JfO99vK7TzRBJyHftwohdPt3bw6kLZJ4/qlkeygGyhNUUjS6UziQgCYoPRgiMlR/hVPmeew2+fFQhatYpFkKciDrpP8PL17XPqiOHpESpaET68JCOVoEL6wkUv7Aw==",
+    "ls": {
+      "$date": {
+        "$numberLong": "1792099749948"
+      }
+    }
+  },
+  {
+    "_id": "6ad145a408d9d91a69c55aef",
+    "rid": "6ad145a408d9d91a69c55aed",
+    "u": {
+      "_id": "tpLGiapWGnoY74w3j",
+      "username": "bob"
+    },
+    "_updatedAt": {
+      "$date": {
+        "$numberLong": "1792099751991"
+      }
+    },
+    "alert": false,
+    "fname": "Alice Anders",
+    "groupMentions": {
+      "$numberInt": "0"
+    },
+    "name": "alice",
+    "open": true,
+    "t": "d",
+    "ts": {
+      "$date": {
+        "$numberLong": "1792099748298"
+      }
+    },
+    "unread": {
+      "$numberInt": "0"
+    },
+    "userMentions": {
+      "$numberInt": "0"
+    },
+    "E2EKey": "bc42713e-f2e0-4b46-ab11-2e0f7ed699cdv95yC8sSgV2D2ga3f1NIWKQO6F5KU+pzyzAZkZ620o2b5W9sP+KXryqe27z08d5pSeZ/A7SC3u2j2bWg7iQR+mKvMHFCSZ9Lg3RR2b2xl652g/NsG5Jn2JsWF74vbXzRXP/WC7Lqkw7to3LxA8Z1tubdIKPyhQCKe4V2ndJ098RsxU0HUjoykbho+H7GryrG3nNLByNpvt4gE2/YU+kiEYlYTHVkmTsfcdwaPr+n0igfeUb+QNhmRC+VT53eK0PLsyi+VYPkUaShQMpClE7y5z9VyQRqQABaLwcYMzZqkUjYS9Z64jt2AuYw2twu6fctDAqonhLiW5XcqzDK1HIC8w==",
+    "ls": {
+      "$date": {
+        "$numberLong": "1792099751991"
+      }
+    }
+  },
+  {
+    "_id": "6ad1462808d9d91a69c55af8",
+    "open": true,
+    "alert": false,
+    "unread": {
+      "$numberInt": "0"
+    },
+    "userMentions": {
+      "$numberInt": "0"
+    },
+    "groupMentions": {
+      "$numberInt": "0"
+    },
+    "ts": {
+      "$date": {
+        "$numberLong": "1792099880165"
+      }
+    },
+    "rid": "6ad1459708d9d91a69c55ade",
+    "name": "handbook-mva1woss",
+    "fname": "handbook-mva1woss",
+    "t": "p",
+    "u": {
+      "_id": "6ad1458e08d9d91a69c55ab9",
+      "username": "rcadmin",
+      "name": "RC Admin"
+    },
+    "inviter": {
+      "_id": "B3mFABPgFaLqcu9Tt",
+      "username": "alice",
+      "name": "Alice Anders"
+    },
+    "_updatedAt": {
+      "$date": {
+        "$numberLong": "1792099911514"
+      }
+    },
+    "ls": {
+      "$date": {
+        "$numberLong": "1792099911514"
+      }
+    },
+    "E2EKey": "db242528-407d-4ef8-b23a-d3192f9baabcBdiYkiCymufwiFQSquWCmxr6QtO8Dd2O9bG/klz3kTQ43dhPzwDgYczzHuCNJfCg2a8uHK5engn0Tzi/mtVYZ8vCQHPfAWdtG18ETPPN6wUXCq0JU3AkZe24eF5JqgCMADPzYLrPrTjhjm8mWFGAcdPF6yW+wDfvWJdDTcQoZ7qPwV0LWLv0UB2NmpQU+a/UKL24s7jY98obFEyN0OMJuq3UnFqo6anYgCBXkEfKzwPGsmbTzhxZOfCkejPObuo1H5bFfetfMNedgq6cv635lm8JfC7+UCOkR13kbgRhZiJorC9B/9xRfdeNgk4VJvyElFBKjCteWKwOhOTUf5szsQ=="
+  }
+]

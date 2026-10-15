@@ -68,6 +68,7 @@ export class E2eeSession {
       sub.E2EKey ?? null,
       sub.E2ESuggestedKey ?? null,
       (sub.oldRoomKeys ?? []).map((k) => k.e2eKeyId),
+      (sub.suggestedOldRoomKeys ?? []).map((k) => k.e2eKeyId),
     ]);
     const cached = this.keyrings.get(sub.rid);
     if (cached && cached.fingerprint === fingerprint) return cached.keyring;

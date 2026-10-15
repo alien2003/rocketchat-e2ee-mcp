@@ -142,7 +142,7 @@ describe('MCP tools', () => {
     });
     expect(text.content[1]?.text).toBe(readFileSync(join(DIR, 'plain', 'release-checklist.md'), 'utf8'));
     const image = await call('get_file', { message_id: msg(rc, 'M8-file-image').msgId });
-    expect(image.json).toMatchObject({ name: 'diagram.png', type: 'image/png', inline: false });
+    expect(image.json).toMatchObject({ name: 'diagram.png', type: 'image/png', inline: true });
     const img = image.content.find((c) => c.type === 'image');
     expect(Buffer.from(img?.data ?? '', 'base64').equals(readFileSync(join(DIR, 'plain', 'diagram.png')))).toBe(true);
   });

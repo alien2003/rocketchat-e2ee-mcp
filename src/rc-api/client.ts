@@ -34,6 +34,11 @@ export interface RcClientOptions {
   sleep?: (ms: number) => Promise<void>;
 }
 
+export interface CallOptions {
+  /** Fail instead of sleeping longer than this for a rate limit (for optional, best-effort calls). */
+  maxRateLimitWaitMs?: number;
+}
+
 export interface DownloadResult {
   bytes: Uint8Array<ArrayBuffer>;
   contentType: string | undefined;
@@ -87,7 +92,11 @@ export class RcClient {
   }
 
   /** GET one allowlisted endpoint under /api/v1 and validate the response. */
-  async get<K extends EndpointName>(endpoint: K, params: QueryParams = {}): Promise<EndpointResponse<K>> {
+  async get<K extends EndpointName>(
+    endpoint: K,
+    params: QueryParams = {},
+    options: CallOptions = {},
+  ): Promise<EndpointResponse<K>> {
     if (!Object.hasOwn(ENDPOINTS, endpoint)) {
       throw new RcApiError('bad-request', endpoint, `endpoint ${endpoint} is not on the read-only allowlist`);
     }
@@ -95,7 +104,7 @@ export class RcClient {
       // im.* endpoints can create a DM when not given an existing DM room id.
       throw new RcApiError('bad-request', endpoint, 'im.files requires the roomId of an existing DM');
     }
-    const json = await this.request(endpoint, `/api/v1/${endpoint}`, params);
+    const json = await this.request(endpoint, `/api/v1/${endpoint}`, params, options);
     const schema = ENDPOINTS[endpoint] as unknown as z.ZodType<EndpointResponse<K>>;
     const parsed = schema.safeParse(json);
     if (!parsed.success) {
@@ -111,12 +120,13 @@ export class RcClient {
 
   /** GET /api/info (server version; more detail when authenticated). */
   async serverInfo(): Promise<z.infer<typeof ServerInfo>> {
-    const json = await this.request('info', '/api/info', {});
+    const json = await this.request('info', '/api/info', {}, {});
     return ServerInfo.parse(json);
   }
 
-  private request(route: string, path: string, params: QueryParams): Promise<unknown> {
-    const run = async () => this.requestWithRetry(route, path, params);
+  private request(route: string, path: string, params: QueryParams, options: CallOptions): Promise<unknown> {
+    const run = async () =>
+      this.requestWithRetry(route, path, params, options.maxRateLimitWaitMs ?? this.maxRateLimitWaitMs);
     const tail = this.queues.get(route) ?? Promise.resolve();
     const next = tail.then(run, run);
     this.queues.set(
@@ -134,12 +144,12 @@ export class RcClient {
     return url.toString();
   }
 
-  private async waitForRoute(route: string): Promise<void> {
+  private async waitForRoute(route: string, maxWaitMs: number): Promise<void> {
     const until = this.pausedUntil.get(route);
     if (until === undefined) return;
     const wait = until - this.now();
     if (wait > 0) {
-      if (wait > this.maxRateLimitWaitMs) {
+      if (wait > maxWaitMs) {
         throw new RcApiError('rate-limited', route, `rate limited; retry after ${Math.ceil(wait / 1000)}s`, {
           status: 429,
         });
@@ -163,10 +173,15 @@ export class RcClient {
     return base + Math.floor(Math.random() * 250);
   }
 
-  private async requestWithRetry(route: string, path: string, params: QueryParams): Promise<unknown> {
+  private async requestWithRetry(
+    route: string,
+    path: string,
+    params: QueryParams,
+    maxWaitMs: number,
+  ): Promise<unknown> {
     let attempt = 0;
     for (;;) {
-      await this.waitForRoute(route);
+      await this.waitForRoute(route, maxWaitMs);
       const url = this.buildUrl(path, params);
       const started = this.now();
       let res: Response;
@@ -201,7 +216,7 @@ export class RcClient {
       if (res.status === 429) {
         const reset = Number(res.headers.get('x-ratelimit-reset'));
         const wait = Number.isFinite(reset) && reset > this.now() ? reset - this.now() + 100 : this.backoff(attempt);
-        if (attempt >= this.maxRetries || wait > this.maxRateLimitWaitMs) {
+        if (attempt >= this.maxRetries || wait > maxWaitMs) {
           await res.body?.cancel();
           throw new RcApiError(
             'rate-limited',

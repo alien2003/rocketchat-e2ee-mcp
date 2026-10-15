@@ -117,18 +117,27 @@ function isRemovedFileAttachment(att: unknown): att is { type: 'removed-file'; f
   return typeof att === 'object' && att !== null && (att as { type?: unknown }).type === 'removed-file';
 }
 
+/** A file attachment as recognised by core-typings' isFileAttachment (type 'file' or a media url). */
+function isFileAttachment(att: unknown): boolean {
+  if (typeof att !== 'object' || att === null) return false;
+  const a = att as Record<string, unknown>;
+  return a.type === 'file' || 'image_url' in a || 'audio_url' in a || 'video_url' in a;
+}
+
+/** `E2ERoom.decryptMessageContent`: decrypted fields replace the server copy; removed files stay removed. */
 function mergeContent<T extends RawMessage>(raw: T, content: DecryptedContent): T & { msg: string } {
   const removed = (raw.attachments ?? []).filter(isRemovedFileAttachment);
   const merged = { ...raw, ...content } as T & { msg: string };
   if (typeof merged.msg !== 'string') merged.msg = '';
-  if (removed.length && Array.isArray(merged.attachments)) {
-    const removeAll = removed.find((r) => !r.fileId);
-    merged.attachments = merged.attachments.map((att) => {
-      const fileId = (att as { fileId?: string }).fileId;
-      if (removeAll && fileId) return removeAll;
-      return removed.find((r) => r.fileId && r.fileId === fileId) ?? att;
-    });
-  }
+  if (!removed.length || !Array.isArray(merged.attachments) || !content.attachments?.length) return merged;
+  const removeAll = removed.find((r) => !r.fileId);
+  merged.attachments = merged.attachments.map((att) => {
+    if (!isFileAttachment(att)) return att;
+    if (removeAll) return removeAll;
+    const fileId = (att as { fileId?: string }).fileId || (merged.file as { _id?: string } | undefined)?._id;
+    if (!fileId) return att;
+    return removed.find((r) => r.fileId === fileId) ?? att;
+  });
   return merged;
 }
 
@@ -174,8 +183,13 @@ export async function decryptMessage<T extends RawMessage>(
   }
   try {
     const { content, decoded, keySource } = await decryptWithKeyring(payload, keyring);
+    // Legacy payloads in `msg` only ever contribute the text (E2ERoom.decryptMessage keeps just `msg`).
+    const message =
+      typeof payload === 'string'
+        ? { ...raw, msg: typeof content.msg === 'string' ? content.msg : '' }
+        : mergeContent(raw, content);
     return {
-      message: mergeContent(raw, content),
+      message,
       decryption: { state: 'decrypted', codec: decoded.codec, kid: decoded.kid, keySource },
     };
   } catch (error) {

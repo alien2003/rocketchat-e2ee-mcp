@@ -9,9 +9,9 @@
  *   rc-mcp export <room>    room or thread to Markdown
  *   rc-mcp purge            delete the local index
  */
-import { existsSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Command, Option } from 'commander';
+import { Command, InvalidArgumentError, Option } from 'commander';
 import { App } from '../app.ts';
 import { ConfigError, loadConfig } from '../config.ts';
 import { DB_FILENAME } from '../index/db.ts';
@@ -31,10 +31,17 @@ process.on('unhandledRejection', (error) => {
   process.exit(1);
 });
 
-function makeApp(requireCredentials = true): App {
-  const config = loadConfig({ requireCredentials });
+function makeApp(options: { interactive?: boolean } = {}): App {
+  const config = loadConfig();
   setLogLevel(config.logLevel);
-  return new App({ config });
+  return new App({ config, ...(options.interactive ? { interactive: true } : {}) });
+}
+
+/** Parses a positive integer option; commander's Number parser would silently accept NaN. */
+function positiveInt(value: string): number {
+  const n = Number(value);
+  if (!Number.isInteger(n) || n <= 0) throw new InvalidArgumentError('expected a positive integer');
+  return n;
 }
 
 function fatal(error: unknown): never {
@@ -49,7 +56,7 @@ function fatal(error: unknown): never {
 
 async function serve(): Promise<void> {
   const { serveStdio } = await import('../mcp/stdio.ts');
-  await serveStdio(makeApp());
+  await serveStdio(makeApp({ interactive: true }));
 }
 
 const program = new Command()
@@ -88,7 +95,11 @@ program
   .description('fetch new, edited and deleted messages into the local index')
   .argument('[room]', 'room id or name (default: all rooms)')
   .option('--full', 'discard the local copy and re-index from scratch')
-  .addOption(new Option('--max-messages <n>', 'backfill at most n older messages per room').argParser(Number))
+  .addOption(
+    new Option('--max-messages <n>', 'backfill at most n older messages per room (default: all)').argParser(
+      positiveInt,
+    ),
+  )
   .option('--json', 'machine-readable output')
   .action(async (room: string | undefined, opts: { full?: boolean; maxMessages?: number; json?: boolean }) => {
     try {
@@ -98,7 +109,7 @@ program
       const res = await syncRooms(app, {
         ...(room ? { room } : {}),
         full: opts.full ?? false,
-        ...(opts.maxMessages ? { max_messages: opts.maxMessages } : {}),
+        ...(opts.maxMessages ? { max_messages: opts.maxMessages } : { unbounded: true }),
       });
       if (opts.json) outJson(res);
       else {
@@ -113,6 +124,7 @@ program
         if (res.note) out(res.note);
       }
       app.close();
+      if (res.failed_rooms) process.exitCode = 1;
     } catch (error) {
       fatal(error);
     }
@@ -126,7 +138,7 @@ program
   .option('-f, --from <user...>', 'limit to authors (usernames)')
   .option('--after <date>', 'ISO date')
   .option('--before <date>', 'ISO date')
-  .addOption(new Option('-n, --limit <n>', 'max results').argParser(Number))
+  .addOption(new Option('-n, --limit <n>', 'max results').argParser(positiveInt))
   .option('--no-refresh', 'do not sync stale rooms first')
   .option('--json', 'machine-readable output')
   .action(
@@ -196,6 +208,8 @@ program
       });
       if (opts.output) {
         writeFileSync(opts.output, res.markdown, { mode: 0o600 });
+        chmodSync(opts.output, 0o600); // also when the file already existed
+
         process.stderr.write(`wrote ${res.count} messages to ${opts.output}\n`);
       } else {
         out(res.markdown);
@@ -213,16 +227,16 @@ program
   .action(async (opts: { yes?: boolean }) => {
     try {
       const { out } = await import('./output.ts');
+      const { FILES_MARKER } = await import('../mcp/operations.ts');
+      // Purge what rc-mcp may have written under the data dir, also when currently running ephemeral.
       const config = loadConfig({ requireCredentials: false });
-      if (config.ephemeral) {
-        out('ephemeral mode: nothing is stored on disk');
-        return;
-      }
+      const filesDir = join(config.dataDir, 'files');
       const targets = [
         join(config.dataDir, DB_FILENAME),
         join(config.dataDir, `${DB_FILENAME}-wal`),
         join(config.dataDir, `${DB_FILENAME}-shm`),
-        join(config.dataDir, 'files'),
+        // Only a files directory that rc-mcp created (marker file) is removed.
+        ...(existsSync(join(filesDir, FILES_MARKER)) ? [filesDir] : []),
       ].filter((p) => existsSync(p));
       if (!targets.length) {
         out(`nothing to purge in ${config.dataDir}`);

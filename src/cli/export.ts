@@ -4,7 +4,7 @@
 import type { App } from '../app.ts';
 import type { MessageRecord, RoomRecord } from '../index/store.ts';
 import { stripQuoteMarkers } from '../mcp/format.ts';
-import { resolveRoom } from '../mcp/operations.ts';
+import { normalizeDate, resolveRoom } from '../mcp/operations.ts';
 
 function author(m: MessageRecord): string {
   if (!m.username) return 'unknown';
@@ -67,6 +67,8 @@ export async function exportMarkdown(
   opts: ExportOptions,
 ): Promise<{ markdown: string; room: RoomRecord; count: number }> {
   const room = await resolveRoom(app, opts.room);
+  const since = normalizeDate(opts.since, '--since');
+  const until = normalizeDate(opts.until, '--until');
   const syncer = await app.syncer();
   await syncer.syncRoom(room.rid);
   const generated = new Date().toISOString();
@@ -83,7 +85,7 @@ export async function exportMarkdown(
 
   if (opts.thread) {
     const root = app.store.getMessage(opts.thread);
-    if (!root) throw new Error(`thread ${opts.thread} not found in ${room.displayName}`);
+    if (!root || root.rid !== room.rid) throw new Error(`thread ${opts.thread} not found in ${room.displayName}`);
     const replies = app.store.threadMessages(root.id, 100_000);
     const md = `${header(`Thread in ${room.displayName}`, replies.length + 1)}\n${renderMessage(root, replies)}\n`;
     return { markdown: md, room, count: replies.length + 1 };
@@ -93,15 +95,16 @@ export async function exportMarkdown(
     .listMessages(room.rid, {
       limit: 1_000_000,
       includeThreads: true,
-      ...(opts.since ? { after: opts.since } : {}),
-      ...(opts.until ? { before: opts.until } : {}),
+      ...(since ? { after: since } : {}),
+      ...(until ? { before: until } : {}),
     })
     .reverse();
   const replies = new Map<string, MessageRecord[]>();
   for (const m of all) {
     if (m.tmid) replies.set(m.tmid, [...(replies.get(m.tmid) ?? []), m]);
   }
-  const roots = all.filter((m) => !m.tmid || !all.some((x) => x.id === m.tmid));
+  const ids = new Set(all.map((m) => m.id));
+  const roots = all.filter((m) => !m.tmid || !ids.has(m.tmid));
   const sections: string[] = [header(room.displayName, all.length)];
   let day = '';
   for (const m of roots) {

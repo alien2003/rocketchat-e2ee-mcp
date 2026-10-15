@@ -57,6 +57,7 @@ export const Subscription = z.looseObject({
   E2EKey: z.string().optional().nullable(),
   E2ESuggestedKey: z.string().optional().nullable(),
   oldRoomKeys: z.array(OldRoomKey).optional().nullable(),
+  suggestedOldRoomKeys: z.array(OldRoomKey).optional().nullable(),
 });
 export type Subscription = z.infer<typeof Subscription>;
 

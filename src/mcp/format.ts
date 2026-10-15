@@ -54,7 +54,7 @@ export function extractMessageLinks(text: string): { messageId: string; url: str
     try {
       const url = new URL(match[0]);
       const id = url.searchParams.get('msg');
-      if (id && /^[A-Za-z0-9]{10,24}$/.test(id)) out.push({ messageId: id, url: match[0] });
+      if (id && MESSAGE_ID.test(id)) out.push({ messageId: id, url: match[0] });
     } catch {
       // not a URL
     }
@@ -150,15 +150,24 @@ export function formatRoom(r: RoomRecord, extra: Record<string, unknown> = {}): 
   };
 }
 
+/**
+ * Message ids are usually 17-char Meteor ids, but imports create others (e.g. Slack: `slack-<channel>-<ts>`).
+ * Accept any id-like token without whitespace or URL syntax.
+ */
+const MESSAGE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+
 /** Parses a pasted Rocket.Chat URL (or a bare id) into a message/thread id. */
 export function parseMessageRef(input: string): { messageId?: string; threadId?: string } {
   const trimmed = input.trim();
-  if (/^[A-Za-z0-9]{10,24}$/.test(trimmed)) return { messageId: trimmed };
+  if (MESSAGE_ID.test(trimmed)) return { messageId: trimmed };
   try {
     const url = new URL(trimmed);
     const msg = url.searchParams.get('msg') ?? undefined;
-    const thread = url.pathname.match(/\/thread\/([A-Za-z0-9]{10,24})/)?.[1];
-    return { ...(msg ? { messageId: msg } : {}), ...(thread ? { threadId: thread } : {}) };
+    const thread = url.pathname.match(/\/thread\/([^/?#]+)/)?.[1];
+    return {
+      ...(msg && MESSAGE_ID.test(msg) ? { messageId: msg } : {}),
+      ...(thread && MESSAGE_ID.test(decodeURIComponent(thread)) ? { threadId: decodeURIComponent(thread) } : {}),
+    };
   } catch {
     return {};
   }

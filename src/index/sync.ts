@@ -29,6 +29,10 @@ export interface SyncOptions {
   maxMessages?: number;
   /** Drop the room's local copy and start over. */
   full?: boolean;
+  /** Skip the incremental step (e.g. when paging older history right after an incremental sync). */
+  skipIncremental?: boolean;
+  /** Skip the backfill step. */
+  skipBackfill?: boolean;
 }
 
 export interface SyncReport {
@@ -63,6 +67,8 @@ export class Syncer {
   private readonly store: IndexStore;
   private readonly pageSize: number;
   private subs = new Map<string, Subscription>();
+  /** rid -> keyring fingerprint used for the last retry of undecryptable messages */
+  private readonly retriedWith = new Map<string, string>();
   private rooms = new Map<string, Room>();
 
   constructor(client: RcReader, session: E2eeSession, store: IndexStore, options: { pageSize?: number } = {}) {
@@ -198,7 +204,7 @@ export class Syncer {
     await this.retryUndecryptable(rid, keyring, report);
 
     // 1) incremental changes since the watermark
-    if (state.updatedCursor !== null) {
+    if (state.updatedCursor !== null && !options.skipIncremental) {
       const res = await this.client.get('chat.syncMessages', {
         roomId: rid,
         lastUpdate: new Date(state.updatedCursor - 1).toISOString(),
@@ -207,19 +213,23 @@ export class Syncer {
       for (const d of res.result.deleted) {
         if (this.store.deleteMessage(d._id)) report.deleted++;
       }
+      // The watermark always keeps a safety margin behind the server clock: writes stamped slightly earlier
+      // can commit after our read (clock skew between app servers, write latency). Overlap is re-fetched
+      // idempotently. Without a Date header, fall back to the newest change seen, minus the margin.
+      const server = this.client.serverNow;
       const seen = [
         ...res.result.updated.map((m) => Date.parse(m._updatedAt ?? m.ts)),
         ...res.result.deleted.map((d) => Date.parse(String(d._deletedAt ?? ''))),
       ].filter(Number.isFinite);
-      const server = this.client.serverNow;
-      state.updatedCursor = Math.max(state.updatedCursor, ...seen, ...(server ? [server - WATERMARK_MARGIN_MS] : []));
+      const candidate = server ?? (seen.length ? Math.max(...seen) : state.updatedCursor);
+      state.updatedCursor = Math.max(state.updatedCursor, candidate - WATERMARK_MARGIN_MS);
       this.store.saveSyncState(state);
     }
 
     // 2) backfill older history
     let fetched = 0;
     const max = options.maxMessages ?? Number.POSITIVE_INFINITY;
-    while (!state.backfillDone && fetched < max) {
+    while (!options.skipBackfill && !state.backfillDone && fetched < max) {
       const res = await this.client.get('rooms.history', {
         roomId: rid,
         count: this.pageSize,
@@ -258,12 +268,13 @@ export class Syncer {
     const reports: SyncReport[] = [];
     for (const room of wanted) {
       const state = this.store.getSyncState(room.rid);
+      // Compare server time with server time: the watermark is taken from the server clock at query time.
       if (
         options.skipUnchanged &&
         state?.backfillDone &&
-        state.lastSyncAt &&
+        state.updatedCursor !== null &&
         room.updatedAt &&
-        Date.parse(room.updatedAt) < Date.parse(state.lastSyncAt) - WATERMARK_MARGIN_MS
+        Date.parse(room.updatedAt) < state.updatedCursor
       ) {
         reports.push({
           rid: room.rid,
@@ -298,14 +309,17 @@ export class Syncer {
     return reports;
   }
 
-  /** Retries stored undecryptable messages locally when the keyring now holds a key that may open them. */
+  /**
+   * Retries stored undecryptable messages locally when the room's keyring changed since the last attempt
+   * (e.g. a key was shared after the first sync). Pure local work; no REST calls.
+   */
   private async retryUndecryptable(rid: string, keyring: RoomKeyring | undefined, report: SyncReport): Promise<void> {
     if (!keyring) return;
+    const fingerprint = [keyring.current?.keyId ?? '', ...keyring.old.keys()].join('|');
+    if (this.retriedWith.get(rid) === fingerprint) return;
+    this.retriedWith.set(rid, fingerprint);
     const pending = this.store.pendingUndecryptable(rid);
-    if (!pending.length) return;
-    const held = new Set(keyring.keyIds);
-    const candidates = pending.filter((p) => !p.kid || held.has(p.kid) || keyring.current);
-    for (const p of candidates) {
+    for (const p of pending) {
       const { record } = await convertMessage(p.raw as Message, keyring);
       if (record.decryption.state !== 'decrypted') continue;
       this.store.upsertMessage(record);

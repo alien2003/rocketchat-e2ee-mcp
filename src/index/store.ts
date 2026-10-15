@@ -382,7 +382,7 @@ export class IndexStore {
       params.push(opts.before);
     }
     if (opts.after) {
-      clauses.push('ts > ?');
+      clauses.push('ts >= ?');
       params.push(opts.after);
     }
     params.push(opts.limit ?? 50);

@@ -46,6 +46,11 @@ run = "tsc -p tsconfig.json --noEmit"
 description = "Unit tests (offline; crypto is checked against committed ground-truth fixtures)"
 run = "vitest run --project unit"
 
+[tasks.check]
+description = "lint + typecheck + unit tests (same as `mise run lint ::: typecheck ::: test`)"
+depends = ["lint", "typecheck"]
+run = "vitest run --project unit"
+
 [tasks."test:integration"]
 description = "Integration tests against the compose stack (run `mise run rc:up` first)"
 run = "vitest run --project integration"

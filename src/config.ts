@@ -1,6 +1,6 @@
 import { readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { isAbsolute, join, resolve } from 'node:path';
 import { z } from 'zod';
 import { isLogLevel, type LogLevel, registerSecret } from './logger.ts';
 
@@ -76,6 +76,18 @@ function readConfigFile(path: string, explicit: boolean): FileConfig {
   return result.data;
 }
 
+/**
+ * The data dir holds plaintext of decrypted messages, so it must never land somewhere unexpected (such as the
+ * project directory an MCP client happened to start the server in): expand a leading `~`, require absolute paths.
+ */
+function resolveDataDir(value: string): string {
+  const expanded = value === '~' ? homedir() : value.startsWith('~/') ? join(homedir(), value.slice(2)) : value;
+  if (!isAbsolute(expanded)) {
+    throw new ConfigError(`RC_MCP_DATA_DIR / dataDir must be an absolute path (got "${value}")`);
+  }
+  return resolve(expanded);
+}
+
 function parseBool(value: string | undefined): boolean | undefined {
   if (value === undefined || value === '') return undefined;
   return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
@@ -123,7 +135,7 @@ export function loadConfig(options: LoadConfigOptions = {}): Config {
     userId,
     authToken,
     e2eePassword,
-    dataDir: resolve(env.RC_MCP_DATA_DIR || file.dataDir || defaultDataDir(env)),
+    dataDir: resolveDataDir(env.RC_MCP_DATA_DIR || file.dataDir || defaultDataDir(env)),
     ephemeral: parseBool(env.RC_MCP_EPHEMERAL) ?? file.ephemeral ?? false,
     logLevel: logLevelRaw,
     configFile: file && Object.keys(file).length ? configFile : undefined,

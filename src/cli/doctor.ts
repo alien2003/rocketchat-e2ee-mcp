@@ -41,7 +41,7 @@ function describeConfig(config: Config): Check[] {
       name: 'index',
       status: 'info',
       detail: config.ephemeral
-        ? 'ephemeral (in memory, nothing written to disk)'
+        ? 'ephemeral: index kept in memory; get_file returns files inline instead of saving them'
         : `stored in ${config.dataDir} (plaintext of decrypted messages)`,
     },
   ];

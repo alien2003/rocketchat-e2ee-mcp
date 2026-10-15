@@ -37,10 +37,12 @@ export function toErrorPayload(error: unknown): { code: string; message: string;
   if (error instanceof RcApiError) {
     const hint =
       error.code === 'unauthorized'
-        ? 'Check RC_USER_ID / RC_AUTH_TOKEN. Run `rc-mcp doctor`.'
+        ? 'Check RC_USER_ID / RC_AUTH_TOKEN (a Rocket.Chat account E2E key reset also revokes PATs). Run `rc-mcp doctor`.'
         : error.code === 'rate-limited'
           ? 'Rocket.Chat rate limit hit; wait and retry, or ask an admin to raise API_Enable_Rate_Limiter limits.'
-          : undefined;
+          : error.code === 'network' || error.code === 'timeout'
+            ? 'Rocket.Chat is unreachable: check RC_URL and the network. Run `rc-mcp doctor`.'
+            : undefined;
     return { code: `rocketchat-${error.code}`, message: error.message, ...(hint ? { hint } : {}) };
   }
   if (isE2eeError(error))
@@ -68,7 +70,9 @@ const roomRef = z
   .string()
   .min(1)
   .describe('Room id, room name (e.g. "dev-handbook"), display name, or "@username" for a direct message.');
-const isoDate = z.string().describe('ISO-8601 date or date-time, e.g. "2026-03-01" or "2026-03-01T12:00:00Z".');
+const isoDate = z
+  .string()
+  .describe('ISO-8601 date or date-time, e.g. "2026-03-01" (midnight UTC) or "2026-03-01T14:00:00+02:00".');
 
 export function createServer(app: App): McpServer {
   const server = new McpServer(
@@ -115,8 +119,10 @@ export function createServer(app: App): McpServer {
         'Read messages of one room, decrypted, oldest-first within the returned page (newest page by default). Each message has id, ts, author, text, thread_id/reply_count, attachments and a permalink. Page backwards with `before` = the returned `older_than_cursor`. Thread replies are excluded unless include_thread_replies is true (use get_thread for a whole thread). The room is synced incrementally before reading.',
       inputSchema: {
         room: roomRef,
-        before: isoDate.optional().describe('Only messages strictly before this time (for paging back).'),
-        after: isoDate.optional().describe('Only messages after this time.'),
+        before: isoDate
+          .optional()
+          .describe('Only messages strictly before this instant (pass older_than_cursor to page back).'),
+        after: isoDate.optional().describe('Only messages at or after this instant.'),
         limit: z.number().int().min(1).max(200).optional().describe('Messages to return (default 30, max 200).'),
         include_thread_replies: z.boolean().optional().describe('Also include replies that live in threads.'),
       },
@@ -165,19 +171,21 @@ export function createServer(app: App): McpServer {
     {
       title: 'Search messages',
       description:
-        'Full-text search over the locally indexed, decrypted messages of all rooms (including end-to-end encrypted ones). All words must match; accents are ignored; append * for prefix search (deploy*). Filter by rooms, authors (usernames), date range or thread. Results include a «highlighted» snippet, thread info and permalink. For unencrypted rooms the server-side search is also queried and merged (`source`: index | server | index+server). Stale rooms are synced first unless refresh=false.',
+        'Full-text search over the locally indexed, decrypted messages of all rooms (including end-to-end encrypted ones). All words must match; accents are ignored; append * for prefix search (deploy*). Filter by rooms, authors (usernames), date range or thread. Results include a «highlighted» snippet, thread info and permalink. When specific unencrypted rooms are given, the Rocket.Chat server search is also queried and merged (`source`: index | server | index+server). Stale rooms are synced first unless refresh=false; if Rocket.Chat is unreachable the local index still answers and `notes` says so.',
       inputSchema: {
         query: z.string().min(1).describe('Words to search for, e.g. "deploy runbook" or "postgres failover".'),
         rooms: z.array(roomRef).optional().describe('Limit to these rooms.'),
         from: z.array(z.string()).optional().describe('Limit to messages by these usernames.'),
-        after: isoDate.optional(),
-        before: isoDate.optional(),
+        after: isoDate.optional().describe('Only messages at or after this instant.'),
+        before: isoDate.optional().describe('Only messages strictly before this instant.'),
         thread_id: z.string().optional().describe('Limit to one thread (root id).'),
         limit: z.number().int().min(1).max(100).optional().describe('Maximum results (default 20).'),
         include_server_search: z
           .boolean()
           .optional()
-          .describe('Also query Rocket.Chat search for unencrypted rooms (default true).'),
+          .describe(
+            'Also query Rocket.Chat server search for unencrypted rooms (default: only when `rooms` is given; unencrypted rooms are indexed locally anyway).',
+          ),
         refresh: z.boolean().optional().describe('Sync stale rooms before searching (default true).'),
       },
       annotations: READ_ONLY,
@@ -190,7 +198,7 @@ export function createServer(app: App): McpServer {
     {
       title: 'Sync the local index',
       description:
-        'Fetch new, edited and deleted messages into the local encrypted-content index, for one room or for all rooms. Large rooms are backfilled in chunks: if `note` says history is incomplete, call again. Returns what changed per room. Only reads from Rocket.Chat.',
+        'Fetch new, edited and deleted messages into the local index of decrypted messages, for one room or for all rooms. Older history is backfilled in chunks of up to max_messages (default 2000) per room per call: if `note` says history is incomplete, call again. Returns what changed per room. Only reads from Rocket.Chat.',
       inputSchema: {
         room: roomRef.optional().describe('Sync only this room (default: all rooms that changed).'),
         full: z.boolean().optional().describe('Discard the local copy and re-index from scratch.'),
@@ -212,7 +220,7 @@ export function createServer(app: App): McpServer {
     {
       title: 'Get an attachment',
       description:
-        "Download an attachment and decrypt it locally if it was uploaded to an encrypted room. Text-like files (markdown, code, json, csv, txt…) up to 256 KiB are returned inline; images are returned as images; anything else is saved to a private local path that is returned. Identify the file by file_id (from a message's attachments) or by message_id.",
+        "Download an attachment and decrypt it locally if it was uploaded to an encrypted room (integrity checked against the uploader's SHA-256). Text-like files (markdown, code, json, csv, txt…) up to max_inline_bytes are returned as text; images up to 4 MiB as images; other files are saved to the private data directory and the path is returned (in ephemeral mode they are returned inline as a binary resource instead, never written to disk). Identify the file by file_id (from a message's attachments) or by message_id.",
       inputSchema: {
         file_id: z.string().optional().describe('The attachment file_id.'),
         message_id: z.string().optional().describe('The message carrying the file.'),
@@ -232,6 +240,16 @@ export function createServer(app: App): McpServer {
         const content: CallToolResult['content'] = [{ type: 'text', text: JSON.stringify(res.meta, null, 2) }];
         if (res.text !== undefined) content.push({ type: 'text', text: res.text });
         if (res.image) content.push({ type: 'image', data: res.image.data, mimeType: res.image.mimeType });
+        if (res.blob) {
+          content.push({
+            type: 'resource',
+            resource: {
+              uri: `rocketchat://file/${String(res.meta.file_id)}`,
+              mimeType: res.blob.mimeType,
+              blob: res.blob.data,
+            },
+          });
+        }
         return { content };
       } catch (error) {
         return fail(error);

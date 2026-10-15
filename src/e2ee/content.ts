@@ -110,7 +110,8 @@ export async function decryptPayload(decoded: DecodedPayload, roomKey: RoomKey):
   }
   let parsed: unknown;
   try {
-    parsed = parseEjson(new TextDecoder('utf-8', { fatal: true }).decode(plain));
+    // Same as the browser client: invalid UTF-8 sequences become U+FFFD instead of failing.
+    parsed = parseEjson(new TextDecoder('utf-8').decode(plain));
   } catch (error) {
     throw new E2eeError('invalid-plaintext', 'decrypted content is not UTF-8 EJSON', { cause: error });
   }

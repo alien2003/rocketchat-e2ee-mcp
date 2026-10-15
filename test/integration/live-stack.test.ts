@@ -149,7 +149,7 @@ describe('other users', () => {
     const rooms = await listRooms(app, {});
     expect(rooms.e2ee).toMatchObject({ status: 'unavailable', reason: 'no-user-keys' });
     expect((rooms.rooms as Array<Record<string, unknown>>).some((r) => r.id === GROUP)).toBe(false);
-    const fromServer = await search(app, { query: marker, refresh: false });
+    const fromServer = await search(app, { query: marker, refresh: false, include_server_search: true });
     expect(fromServer.results[0]).toMatchObject({ source: 'server' });
     const merged = await search(app, { query: marker, rooms: ['general'] });
     expect(merged.results[0]).toMatchObject({ source: 'index+server' });

@@ -14,6 +14,8 @@ export interface SubscriptionKeyMaterial {
   E2EKey?: string | null;
   E2ESuggestedKey?: string | null;
   oldRoomKeys?: Array<{ e2eKeyId: string; ts?: unknown; E2EKey: string }> | null;
+  /** Old keys offered together with E2ESuggestedKey (become oldRoomKeys when the official client accepts). */
+  suggestedOldRoomKeys?: Array<{ e2eKeyId: string; ts?: unknown; E2EKey: string }> | null;
 }
 
 export type KeySource = 'current' | 'suggested' | 'old';
@@ -99,7 +101,13 @@ export async function buildKeyring(sub: SubscriptionKeyMaterial, privateKey: Cry
     current = await tryUnwrap(sub.E2ESuggestedKey, privateKey, 'suggested', problems, prefixOf(sub.E2ESuggestedKey));
   }
   const old = new Map<string, KeyringKey>();
-  for (const entry of sub.oldRoomKeys ?? []) {
+  // Mirror the server's accept rule (handleSuggestedGroupKey): suggested old keys are adopted only when the
+  // subscription has no oldRoomKeys of its own.
+  const oldEntries =
+    current?.source === 'suggested' && !sub.oldRoomKeys?.length
+      ? (sub.suggestedOldRoomKeys ?? [])
+      : (sub.oldRoomKeys ?? []);
+  for (const entry of oldEntries) {
     if (!entry?.E2EKey) continue;
     const key = await tryUnwrap(entry.E2EKey, privateKey, 'old', problems, entry.e2eKeyId);
     // Index by the recorded id (what messages reference); the wrapped prefix normally matches it.

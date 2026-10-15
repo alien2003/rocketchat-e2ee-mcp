@@ -41,6 +41,8 @@ export class FakeRc {
   private deleted: { _id: string; rid: string; _deletedAt: string }[] = [];
   clock = Date.parse('2030-01-01T00:00:00Z');
   calls: { endpoint: string; params: QueryParams }[] = [];
+  /** Simulates Rocket.Chat being unreachable. */
+  down = false;
 
   constructor(dir: string, who: Who = 'alice') {
     this.dir = dir;
@@ -108,7 +110,16 @@ export class FakeRc {
       .sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts));
   }
 
+  /** Removes the encrypted `content` of a message (as the client does for some uploads), keeping the rest. */
+  stripContent(id: string): void {
+    for (const list of this.messages.values()) {
+      const m = list.find((x) => x._id === id);
+      if (m) delete (m as { content?: unknown }).content;
+    }
+  }
+
   async get<K extends EndpointName>(endpoint: K, params: QueryParams = {}): Promise<EndpointResponse<K>> {
+    if (this.down) throw new RcApiError('network', endpoint, 'network error calling ' + endpoint);
     this.calls.push({ endpoint, params });
     this.clock += 1000;
     const body = this.handle(endpoint, params);
@@ -199,6 +210,7 @@ export class FakeRc {
   }
 
   async download(path: string): Promise<{ bytes: Uint8Array<ArrayBuffer>; contentType: string | undefined }> {
+    if (this.down) throw new RcApiError('network', 'file-upload', 'network error downloading file');
     const id = path.split('/')[2] ?? '';
     return {
       bytes: new Uint8Array(readFileSync(join(this.dir, 'files', `${id}.bin`))),

@@ -3,32 +3,44 @@
  * keys, ephemeral files, E2EE uploads without message content, dates, ids, data dir safety).
  * All ciphertext comes from the committed real-client fixtures.
  */
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { App } from '../../../src/app.ts';
 import { type Config, loadConfig } from '../../../src/config.ts';
+import { MAX_DECRYPT_BYTES } from '../../../src/e2ee/file.ts';
 import { decryptMessage, type RawMessage } from '../../../src/e2ee/message.ts';
 import { E2eeSession } from '../../../src/e2ee/session.ts';
 import { parseMessageRef } from '../../../src/mcp/format.ts';
 import { getFile, getMessage, getMessages, getThread, search, syncRooms } from '../../../src/mcp/operations.ts';
+import { RcApiError } from '../../../src/rc-api/errors.ts';
 import { FakeRc } from '../../support/fake-rc.ts';
 import { REPO_ROOT } from '../../support/stack.ts';
 
 const DIR = join(REPO_ROOT, 'test', 'fixtures', '8.9.0');
 const apps: App[] = [];
+const tempRoots: string[] = [];
 afterEach(() => {
   for (const a of apps.splice(0)) a.close();
+  for (const root of tempRoots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-function makeApp(opts: { pageSize?: number; who?: 'alice' | 'bob' } = {}) {
+function tempDataDir(): string {
+  const root = mkdtempSync(join(tmpdir(), 'rcmcp-'));
+  tempRoots.push(root);
+  return join(root, 'data');
+}
+
+function makeApp(opts: { pageSize?: number; who?: 'alice' | 'bob'; persistent?: boolean } = {}) {
   const rc = new FakeRc(DIR, opts.who ?? 'alice');
   const config: Config = {
     url: 'http://localhost:3000',
     userId: rc.userId,
     authToken: 'test-token-not-real',
     e2eePassword: rc.password,
-    dataDir: '/nonexistent',
-    ephemeral: true,
+    dataDir: opts.persistent ? tempDataDir() : '/nonexistent',
+    ephemeral: !opts.persistent,
     logLevel: 'silent',
     configFile: undefined,
   };
@@ -124,6 +136,70 @@ describe('review regressions', () => {
     const res = await getFile(app, { message_id: m7.msgId });
     expect(res.meta).toMatchObject({ name: 'release-checklist.md', encrypted: true, integrity: 'verified' });
     expect(res.text).toMatch(/^# Release checklist/);
+  });
+
+  it('get_file limits a download only where the file could not be used: ephemeral inline, WebCrypto input', async () => {
+    const tooLarge = async () => {
+      throw new RcApiError('too-large', 'file-upload', 'file is too large');
+    };
+    const ephemeral = makeApp();
+    const m7 = label(ephemeral.rc, 'M7-file-text').msgId;
+    await getFile(ephemeral.app, { message_id: m7 });
+    expect(ephemeral.rc.downloadLimits).toEqual([10 * 1024 * 1024]);
+    ephemeral.rc.download = tooLarge;
+    await expect(getFile(ephemeral.app, { message_id: m7 })).rejects.toMatchObject({
+      code: 'file-too-large',
+      message: expect.stringMatching(/ephemeral mode/),
+      hint: expect.stringMatching(/RC_MCP_EPHEMERAL/),
+    });
+
+    const persistent = makeApp({ persistent: true });
+    const res = await getFile(persistent.app, { message_id: m7 });
+    expect(res.meta).toMatchObject({ encrypted: true, integrity: 'verified' });
+    expect(persistent.rc.downloadLimits).toEqual([MAX_DECRYPT_BYTES]);
+    persistent.rc.download = tooLarge;
+    await expect(getFile(persistent.app, { message_id: m7 })).rejects.toMatchObject({
+      code: 'file-too-large',
+      message: expect.stringMatching(/encrypted file is larger than 2147483647 bytes/),
+    });
+  });
+
+  it('get_file downloads unencrypted files without a limit and saves them privately', async () => {
+    const { app, rc } = makeApp({ persistent: true });
+    const group = rc.expected.rooms.group.rid;
+    // A plain upload in an unencrypted message: no crypto involved, so synthetic bytes are fine.
+    rc.messages.get(group)?.push({
+      _id: 'plainFileMsg01',
+      rid: group,
+      ts: '2030-01-01T00:00:00.000Z',
+      msg: '',
+      u: { _id: rc.userId, username: 'alice' },
+      file: { _id: 'plainFile01', name: 'report.bin', type: 'application/octet-stream' },
+      attachments: [{ fileId: 'plainFile01', title: 'report.bin', type: 'file' }],
+    });
+    const limits: number[] = [];
+    rc.download = async (_path, maxBytes = Number.POSITIVE_INFINITY) => {
+      limits.push(maxBytes);
+      return { bytes: new Uint8Array([1, 2, 3, 4]), contentType: 'application/octet-stream' };
+    };
+    const res = await getFile(app, { message_id: 'plainFileMsg01' });
+    expect(limits).toEqual([Number.POSITIVE_INFINITY]);
+    expect(res.meta).toMatchObject({ encrypted: false, inline: false, size: 4 });
+    const saved = String(res.meta.saved_to);
+    expect([...readFileSync(saved)]).toEqual([1, 2, 3, 4]);
+    expect(statSync(saved).mode & 0o777).toBe(0o600);
+
+    // A cancelled request rejects with the cancellation reason and saves nothing.
+    const fresh = makeApp({ persistent: true });
+    const reason = new Error('request cancelled');
+    const m7 = label(fresh.rc, 'M7-file-text').msgId;
+    await expect(getFile(fresh.app, { message_id: m7, max_inline_bytes: 0 }, AbortSignal.abort(reason))).rejects.toBe(
+      reason,
+    );
+    expect(fresh.rc.downloadLimits).toEqual([MAX_DECRYPT_BYTES]);
+    expect(existsSync(fresh.app.filesDir) ? readdirSync(fresh.app.filesDir) : []).not.toContainEqual(
+      expect.stringMatching(/release-checklist/),
+    );
   });
 
   it('get_file refuses ids that are not ids and files that do not exist', async () => {

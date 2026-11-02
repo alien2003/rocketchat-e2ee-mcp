@@ -222,9 +222,11 @@ of rate-limit wait. The other CLI commands keep the defaults (30 s, 5 retries, 1
    it from the room's upload record (`groups.files` / `im.files` / `channels.files`). A file that neither the index
    nor a given message knows is looked up in the upload lists of up to 30 rooms; if it is not found there, the
    result is `file-not-found`. Nothing is downloaded blind.
-3. **Download and decrypt.** `/file-upload/<id>/<name>` with the PAT, at most 50 MiB. Encrypted files are
-   decrypted with AES-CTR and checked against the uploader's SHA-256 (`integrity`: `verified` or `unverified`,
-   reported for encrypted files only).
+3. **Download and decrypt.** `/file-upload/<id>/<name>` with the PAT, with no size limit of its own. The download
+   is stopped early (`file-too-large`) only where the file could not be used: above 10 MiB in ephemeral mode, and
+   above 2 GiB − 1 byte for encrypted files, the most Node's WebCrypto takes in one AES-CTR or SHA-256 operation.
+   Encrypted files are decrypted with AES-CTR and checked against the uploader's SHA-256 (`integrity`: `verified`
+   or `unverified`, reported for encrypted files only).
 4. **Return.**
    - Text-like files (by MIME type or extension) up to `max_inline_bytes` (default 256 KiB) come back as text.
    - Images up to 4 MiB come back as MCP image content. They are not saved.
@@ -287,7 +289,7 @@ The table has indexes on `(rid, ts)`, `(tmid, ts)` and `username`, and a partial
 | Plaintext at rest | 0700 data directory, 0600 database (and WAL/SHM through the umask), 0600 saved files in a 0700 files directory. `RC_MCP_EPHEMERAL=1` keeps the index in memory, and `get_file` then writes nothing to disk. `rc-mcp purge` removes the index, WAL/SHM and the marked files directory. Keys and passwords are never written (ADR 0004). |
 | Malicious or compromised server or member | Not mitigated beyond the official client. The protocol has no signatures: a room key only has to unwrap with the user's private key, and message authenticity rests on the room key. Whoever controls the server database can substitute room keys and inject messages that decrypt correctly. rc-mcp inherits this. |
 | Prompt injection through chat content | rc-mcp has no write tools; every tool is annotated `readOnlyHint: true`. Injected text cannot make rc-mcp change Rocket.Chat. The MCP client's other tools are outside rc-mcp's control. |
-| Resource exhaustion | Downloads are capped at 50 MiB. REST requests time out after 30 s (20 s in `serve`), downloads after four times that. `get_messages` returns at most 200 messages per call. `search` caps its `limit` at 100. The `sync` tool backfills at most 2000 messages per room per call by default. Inline images are capped at 4 MiB and ephemeral inline files at 10 MiB. |
+| Resource exhaustion | Downloads have no size limit. A file is held in memory whole, with a peak of about twice its size (received chunks plus the assembled copy) and about four times for an encrypted file (WebCrypto copies its input and output). A cancelled `get_file` call aborts its download. REST requests time out after 30 s (20 s in `serve`); downloads time out when no data arrives for four times that, with no limit on the total time. `get_messages` returns at most 200 messages per call. `search` caps its `limit` at 100. The `sync` tool backfills at most 2000 messages per room per call by default. Inline images are capped at 4 MiB and ephemeral inline files at 10 MiB. |
 | Supply chain | Three runtime dependencies (`@modelcontextprotocol/sdk`, `zod`, `commander`). No native modules; SQLite is built into Node. |
 
 **Residual risks:**
@@ -379,7 +381,7 @@ Never wrap `rc-mcp serve` in tools that print to stdout.
 
 | Layer | Command | Needs | What it covers |
 | --- | --- | --- | --- |
-| Unit (139 tests in 9 files, offline) | `mise run test` | Nothing | Crypto against committed real-client fixtures (`test/fixtures/8.9.0`) and upstream legacy vectors (`test/fixtures/upstream/legacy-v1.json`). E2EE failure modes. Index and sync against `test/support/fake-rc.ts`, which serves the captured REST dumps with 8.9.0 cursor semantics. MCP tools through the SDK's `InMemoryTransport`. REST client: allowlist, forbidden endpoints, rate limits, scrubbing. Config and logger. Stdout guard. |
+| Unit (144 tests in 9 files, offline) | `mise run test` | Nothing | Crypto against committed real-client fixtures (`test/fixtures/8.9.0`) and upstream legacy vectors (`test/fixtures/upstream/legacy-v1.json`). E2EE failure modes. Index and sync against `test/support/fake-rc.ts`, which serves the captured REST dumps with 8.9.0 cursor semantics. MCP tools through the SDK's `InMemoryTransport`. REST client: allowlist, forbidden endpoints, rate limits, downloads (size limits, inactivity timeout, cancellation), scrubbing. Config and logger. Stdout guard. |
 | Integration (21 tests in 3 files) | `mise run test:integration` | Compose stack (`mise run rc:up`) and a recorded ground-truth run (`mise run test:ground-truth` or `mise run fixtures:generate`, once) | The real REST client, pagination, `chat.syncMessages`, downloads, the accounts alice, bob, carol and the admin (`rcadmin`), the real `rc-mcp serve` over stdio with the MCP client SDK, and the real 429 limiter (enabled at runtime; the stack starts with it off). |
 | Ground truth | `mise run test:ground-truth` | Compose stack and Playwright Chromium | Drives the real web client into `.local/ground-truth/$RC_VERSION`, then runs the same fixture assertions on that fresh capture. See ADR 0003. |
 

@@ -234,9 +234,9 @@ export function createServer(app: App): McpServer {
       },
       annotations: READ_ONLY,
     },
-    async (args) => {
+    async (args, extra) => {
       try {
-        const res = await getFile(app, args);
+        const res = await getFile(app, args, extra.signal);
         const content: CallToolResult['content'] = [{ type: 'text', text: JSON.stringify(res.meta, null, 2) }];
         if (res.text !== undefined) content.push({ type: 'text', text: res.text });
         if (res.image) content.push({ type: 'image', data: res.image.data, mimeType: res.image.mimeType });

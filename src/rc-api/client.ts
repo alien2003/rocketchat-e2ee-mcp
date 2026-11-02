@@ -268,67 +268,103 @@ export class RcClient {
   /**
    * Downloads an upload (`/file-upload/<id>/<name>`) with the PAT headers. Redirects to another origin (S3/GCS
    * signed URLs) are followed WITHOUT credentials.
+   *
+   * No size limit unless the caller passes `maxBytes`, and no limit on the total time: the download fails with
+   * `timeout` only when no data arrives for four times the request timeout, so large files on slow links complete.
+   * Aborting `signal` (e.g. a cancelled MCP request) stops the download and rejects with the signal's reason.
    */
-  async download(path: string, maxBytes = 50 * 1024 * 1024): Promise<DownloadResult> {
+  async download(path: string, maxBytes = Number.POSITIVE_INFINITY, signal?: AbortSignal): Promise<DownloadResult> {
     const route = 'file-upload';
     if (!/^\/file-upload\/[^/]+\/[^?#]*$/.test(path) || path.includes('..')) {
       throw new RcApiError('bad-request', route, 'refusing to download a path outside /file-upload/');
     }
-    let url = new URL(this.baseUrl + path);
-    for (let hop = 0; hop < 5; hop++) {
-      const sameOrigin = url.origin === new URL(this.baseUrl).origin;
-      let res: Response;
-      try {
-        this.requestCount++;
-        res = await this.fetchImpl(url, {
-          method: 'GET',
-          headers: { ...(sameOrigin ? this.authHeaders() : {}), 'user-agent': USER_AGENT },
-          redirect: 'manual',
-          signal: AbortSignal.timeout(this.timeoutMs * 4),
-        });
-      } catch (error) {
-        throw new RcApiError('network', route, 'network error downloading file', { cause: error });
-      }
-      if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
-        url = new URL(res.headers.get('location') as string, url);
-        await res.body?.cancel();
-        continue;
-      }
-      if (!res.ok) {
-        await res.body?.cancel();
-        throw new RcApiError(codeForStatus(res.status), route, `file download failed (HTTP ${res.status})`, {
-          status: res.status,
-        });
-      }
-      const declared = Number(res.headers.get('content-length'));
-      if (Number.isFinite(declared) && declared > maxBytes) {
-        await res.body?.cancel();
-        throw new RcApiError('too-large', route, `file is ${declared} bytes (limit ${maxBytes})`);
-      }
-      const chunks: Uint8Array[] = [];
-      let size = 0;
-      const reader = res.body?.getReader();
-      if (reader) {
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          size += value.byteLength;
-          if (size > maxBytes) {
-            await reader.cancel();
-            throw new RcApiError('too-large', route, `file exceeds the ${maxBytes} byte limit`);
-          }
-          chunks.push(value);
+    signal?.throwIfAborted();
+    const idleMs = this.timeoutMs * 4;
+    const controller = new AbortController();
+    let stalled = false;
+    // One inactivity timer for the whole download, re-armed by every response and every chunk.
+    const timer = setTimeout(() => {
+      stalled = true;
+      controller.abort(new DOMException(`no data for ${idleMs}ms`, 'TimeoutError'));
+    }, idleMs);
+    const stalledError = (cause: unknown) =>
+      new RcApiError('timeout', route, `file download stalled: no data for ${idleMs}ms`, { cause });
+    const cancel = () => controller.abort(signal?.reason);
+    signal?.addEventListener('abort', cancel, { once: true });
+    try {
+      let url = new URL(this.baseUrl + path);
+      for (let hop = 0; hop < 5; hop++) {
+        const sameOrigin = url.origin === new URL(this.baseUrl).origin;
+        let res: Response;
+        try {
+          this.requestCount++;
+          res = await this.fetchImpl(url, {
+            method: 'GET',
+            headers: { ...(sameOrigin ? this.authHeaders() : {}), 'user-agent': USER_AGENT },
+            redirect: 'manual',
+            signal: controller.signal,
+          });
+        } catch (error) {
+          signal?.throwIfAborted();
+          if (stalled) throw stalledError(error);
+          throw new RcApiError('network', route, 'network error downloading file', { cause: error });
         }
+        timer.refresh();
+        if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
+          url = new URL(res.headers.get('location') as string, url);
+          await res.body?.cancel();
+          continue;
+        }
+        if (!res.ok) {
+          await res.body?.cancel();
+          throw new RcApiError(codeForStatus(res.status), route, `file download failed (HTTP ${res.status})`, {
+            status: res.status,
+          });
+        }
+        const declared = Number(res.headers.get('content-length'));
+        if (Number.isFinite(declared) && declared > maxBytes) {
+          await res.body?.cancel();
+          throw new RcApiError('too-large', route, `file is ${declared} bytes (limit ${maxBytes})`);
+        }
+        const chunks: Uint8Array[] = [];
+        let size = 0;
+        const reader = res.body?.getReader();
+        if (reader) {
+          try {
+            for (;;) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              timer.refresh();
+              size += value.byteLength;
+              if (size > maxBytes) {
+                await reader.cancel();
+                throw new RcApiError('too-large', route, `file exceeds the ${maxBytes} byte limit`);
+              }
+              chunks.push(value);
+            }
+          } catch (error) {
+            if (error instanceof RcApiError) throw error;
+            signal?.throwIfAborted();
+            if (stalled) throw stalledError(error);
+            throw new RcApiError('network', route, 'connection lost while downloading file', { cause: error });
+          }
+        }
+        // An aborted body can end as a clean `done` with some fetch implementations; never return it as complete.
+        signal?.throwIfAborted();
+        if (stalled) throw stalledError(undefined);
+        const bytes = new Uint8Array(size);
+        let offset = 0;
+        for (const c of chunks) {
+          bytes.set(c, offset);
+          offset += c.byteLength;
+        }
+        return { bytes, contentType: res.headers.get('content-type') ?? undefined };
       }
-      const bytes = new Uint8Array(size);
-      let offset = 0;
-      for (const c of chunks) {
-        bytes.set(c, offset);
-        offset += c.byteLength;
-      }
-      return { bytes, contentType: res.headers.get('content-type') ?? undefined };
+      throw new RcApiError('network', route, 'too many redirects downloading file');
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', cancel);
     }
-    throw new RcApiError('network', route, 'too many redirects downloading file');
   }
 }
 

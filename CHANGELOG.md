@@ -7,6 +7,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- File downloads are no longer capped at 50 MiB. The download timeout is now an inactivity timeout (no data for
+  four times the request timeout, 80 s in `serve`) instead of a limit on the total time, so large files on slow
+  links complete.
+- `get_file` stops a download early only where the file could not be used: above 10 MiB in ephemeral mode (as
+  before, `file-too-large`), and above 2 GiB − 1 byte for encrypted files (`file-too-large`), the most Node's
+  WebCrypto decrypts in one operation. Saved files are written in slices, so unencrypted files above 2 GiB work.
+- A cancelled `get_file` call aborts its download instead of finishing it in the background.
+
+### Fixed
+
+- A file download that stalls is reported as `rocketchat-timeout`, and a connection lost in the middle of one as
+  `rocketchat-network`; both used to surface as `internal-error` (or `rocketchat-network` for a stall before the
+  response headers).
+
 ## [0.1.0] - 2026-10-15
 
 First release: a read-only MCP server (stdio) and CLI, `rc-mcp`, that lets Claude Code browse and search a

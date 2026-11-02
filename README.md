@@ -232,7 +232,12 @@ actions Claude proposes after reading chat content.
   - Server-side search covers unencrypted rooms only and, by default, runs only when you pass `rooms` (see
     [Data flow](#data-flow)). Unencrypted rooms are in the local index anyway.
 - **Files:**
-  - Downloads are capped at 50 MiB.
+  - Downloads have no size limit and no total time limit; a download fails only when no data arrives for 80 s
+    (four times the `serve` request timeout). The whole file is held in memory: expect a peak of about twice its
+    size, and about four times for an encrypted file while it is decrypted. Cancelling the tool call stops the
+    download.
+  - Encrypted files can be decrypted up to 2 GiB − 1 byte (2147483647 bytes), the most Node's WebCrypto takes
+    in one operation; larger ones fail with `file-too-large` as soon as the size is known.
   - Text is returned inline up to 256 KiB by default (`max_inline_bytes`, at most 1 MiB).
   - Images up to 4 MiB are returned as MCP image content and not saved.
   - Anything else is saved to disk. In ephemeral mode it is returned inline as an embedded resource instead, up
@@ -427,8 +432,8 @@ list contains every subscribed room.
 The codes are:
 
 - `room-not-found`, `invalid-argument`, `message-deleted`;
-- from `get_file`: `file-not-found`, `file-key-missing`, `file-too-large` (ephemeral mode), and `undecryptable`
-  when the file's message or metadata can't be decrypted;
+- from `get_file`: `file-not-found`, `file-key-missing`, `file-too-large` (ephemeral mode, or an encrypted file
+  above 2 GiB − 1 byte), and `undecryptable` when the file's message or metadata can't be decrypted;
 - `rocketchat-<code>`, for example `rocketchat-unauthorized`, `rocketchat-rate-limited`, `rocketchat-network` or
   `rocketchat-timeout`;
 - `e2ee-<reason>`;
@@ -615,7 +620,7 @@ Run `rc-mcp doctor` first. It checks each step and says what to fix.
 | Slow responses; `rocketchat-rate-limited` / `rate limited by Rocket.Chat; retry after Ns` | A non-admin token hit the per-IP, per-route REST limit. | Wait; `rc-mcp` retries by itself. Run `rc-mcp sync` ahead of time so tools read from the index. Ask an admin to raise the limits instead of switching to an admin token. |
 | `search` misses things you know exist | The room isn't fully indexed (`notes` / `history_complete: false`), messages are undecryptable, or `refresh: false` / `--no-refresh` was used. | Run `rc-mcp sync` (or the `sync` tool) until no room reports incomplete history, then search again. |
 | `search` or `get_messages` shows a message that was deleted | The server uses "Keep History" without "Show Deleted Status", so the deletion is never reported (see [Limitations](#limitations)). | `rc-mcp sync <room> --full` |
-| `get_file`: `file-too-large` | Ephemeral mode returns files inline only, up to 10 MiB. | Run without `RC_MCP_EPHEMERAL` to have large files saved to the data directory. |
+| `get_file`: `file-too-large` | Ephemeral mode returns files inline only, up to 10 MiB. Encrypted files can be decrypted up to 2 GiB − 1 byte. | Run without `RC_MCP_EPHEMERAL` to have large files saved to the data directory. Open larger encrypted files in the official client. |
 | doctor: `index file … (mode 644)` warning | The index file's permissions were widened. | `chmod 600 <dataDir>/index.sqlite` |
 | Claude Code reports the server failed or disconnected; JSON parse errors | Something wrote to stdout, or the process is waiting for input. On stdio, stdout belongs to the MCP protocol. Typical culprits: a wrapper script that prints, or `npx` without `-y` stopping at its install confirmation. | Launch `npx -y rocketchat-e2ee-mcp` or `node …/dist/cli/main.js` directly; never wrap `serve` in anything that prints to stdout. Use `RC_MCP_LOG_LEVEL=debug` for more detail (stderr). |
 | npm warns `EBADENGINE`; startup fails with `ERR_UNKNOWN_BUILTIN_MODULE` for `node:sqlite`; doctor: `rc-mcp needs Node.js 24 or newer` | Older Node.js. npm only warns about the `engines` mismatch and runs the CLI anyway. | Install Node.js 24+. |

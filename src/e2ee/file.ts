@@ -10,6 +10,13 @@ import { E2eeError } from './errors.ts';
 
 import { type CryptoKey, type JsonWebKey, subtle } from './webcrypto.ts';
 
+/**
+ * Largest file `decryptFile` can handle: Node's WebCrypto rejects AES-CTR and SHA-256 inputs above 2^31 − 1 bytes
+ * ("data must be at most 2147483647 bytes"), and both run over the whole file. AES-CTR keeps the length, so this
+ * bounds the ciphertext and the plaintext alike.
+ */
+export const MAX_DECRYPT_BYTES = 2 ** 31 - 1;
+
 export interface FileEncryption {
   key: JsonWebKey;
   iv: string;

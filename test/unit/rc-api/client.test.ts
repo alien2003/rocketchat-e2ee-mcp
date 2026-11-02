@@ -39,6 +39,46 @@ function harness(responses: Array<(call: Call) => Response>) {
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', ...headers } });
 
+/**
+ * A body that sends 1 KiB every `everyMs`, then closes (or, with `stallAfter`, goes silent). Like undici's fetch,
+ * it errors with the abort reason when `signal` aborts.
+ */
+function dripping(opts: { chunks: number; everyMs: number; signal?: AbortSignal; stallAfter?: boolean }) {
+  let timer: ReturnType<typeof setInterval> | undefined;
+  let sent = 0;
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      opts.signal?.addEventListener('abort', () => {
+        clearInterval(timer);
+        controller.error(opts.signal?.reason);
+      });
+      timer = setInterval(() => {
+        if (sent < opts.chunks) {
+          sent++;
+          controller.enqueue(new Uint8Array(1024));
+        } else {
+          clearInterval(timer);
+          if (!opts.stallAfter) controller.close();
+        }
+      }, opts.everyMs);
+    },
+    cancel() {
+      clearInterval(timer);
+    },
+  });
+}
+
+function streamingClient(timeoutMs: number, body: (signal: AbortSignal) => ReadableStream<Uint8Array>) {
+  return new RcClient({
+    url: 'https://chat.example.test/',
+    userId: 'u1',
+    authToken: TOKEN,
+    timeoutMs,
+    fetch: (async (_input: string | URL | Request, init?: RequestInit) =>
+      new Response(body(init?.signal ?? new AbortController().signal))) as typeof fetch,
+  });
+}
+
 describe('RcClient', () => {
   it('sends PAT headers with GET only and serialises query params', async () => {
     const h = harness([() => json({ _id: 'u1', username: 'alice', success: true })]);
@@ -162,9 +202,69 @@ describe('RcClient', () => {
     await expect(h.client.download('/file-upload/../api')).rejects.toMatchObject({ code: 'bad-request' });
   });
 
-  it('enforces the download size limit', async () => {
+  it('enforces a download size limit only when the caller passes one', async () => {
     const h = harness([() => new Response(new Uint8Array(10), { headers: { 'content-length': '10' } })]);
     await expect(h.client.download('/file-upload/a/b', 5)).rejects.toMatchObject({ code: 'too-large' });
+    // Without a declared length the limit is enforced while streaming.
+    const h2 = harness([() => new Response(dripping({ chunks: 3, everyMs: 1 }))]);
+    await expect(h2.client.download('/file-upload/a/b', 2048)).rejects.toMatchObject({ code: 'too-large' });
+
+    // No default limit: well past the 50 MiB that used to be the cap.
+    const big = 60 * 1024 * 1024;
+    const h3 = harness([() => new Response(new Uint8Array(big), { headers: { 'content-length': String(big) } })]);
+    expect((await h3.client.download('/file-upload/a/b')).bytes.length).toBe(big);
+  });
+
+  it('times downloads out on inactivity, not on total duration', async () => {
+    // timeoutMs 50 gives a 200 ms inactivity limit; the steady body takes about twice that in total.
+    const steady = streamingClient(50, (signal) => dripping({ chunks: 40, everyMs: 10, signal }));
+    expect((await steady.download('/file-upload/a/b')).bytes.length).toBe(40 * 1024);
+
+    const stalled = streamingClient(50, (signal) => dripping({ chunks: 3, everyMs: 10, signal, stallAfter: true }));
+    await expect(stalled.download('/file-upload/a/b')).rejects.toMatchObject({ code: 'timeout' });
+
+    // A server that never answers is a timeout too.
+    const silent = new RcClient({
+      url: 'https://chat.example.test/',
+      userId: 'u1',
+      authToken: TOKEN,
+      timeoutMs: 25,
+      fetch: ((_input: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason));
+        })) as typeof fetch,
+    });
+    await expect(silent.download('/file-upload/a/b')).rejects.toMatchObject({ code: 'timeout' });
+  });
+
+  it('reports a connection lost mid-download as a network error', async () => {
+    let pulls = 0;
+    const h = harness([
+      () =>
+        new Response(
+          new ReadableStream<Uint8Array>({
+            // One chunk, then the error undici raises when the socket closes early.
+            pull(controller) {
+              if (pulls++ === 0) controller.enqueue(new Uint8Array(16));
+              else controller.error(new TypeError('terminated'));
+            },
+          }),
+        ),
+    ]);
+    await expect(h.client.download('/file-upload/a/b')).rejects.toMatchObject({ code: 'network' });
+    expect(pulls).toBe(2);
+  });
+
+  it('stops a download when the caller aborts it', async () => {
+    const client = streamingClient(50, (signal) => dripping({ chunks: 3, everyMs: 5, signal, stallAfter: true }));
+    const caller = new AbortController();
+    const reason = new Error('request cancelled');
+    setTimeout(() => caller.abort(reason), 40);
+    await expect(client.download('/file-upload/a/b', undefined, caller.signal)).rejects.toBe(reason);
+
+    const h = harness([]);
+    await expect(h.client.download('/file-upload/a/b', undefined, AbortSignal.abort(reason))).rejects.toBe(reason);
+    expect(h.calls).toHaveLength(0);
   });
 
   it('records the server clock from the Date header', async () => {

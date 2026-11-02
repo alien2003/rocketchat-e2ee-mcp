@@ -5,13 +5,16 @@
  * unreachable they answer from the index and say so in `notes` instead of failing.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { App } from '../app.ts';
-import { decryptFile, type FileEncryption } from '../e2ee/file.ts';
+import { decryptFile, type FileEncryption, MAX_DECRYPT_BYTES } from '../e2ee/file.ts';
 import { decryptMessage } from '../e2ee/message.ts';
 import { convertMessage } from '../index/convert.ts';
 import type { MessageRecord, RoomRecord } from '../index/store.ts';
 import type { SyncReport } from '../index/sync.ts';
+import type { DownloadResult } from '../rc-api/client.ts';
+import { RcApiError } from '../rc-api/errors.ts';
 import type { Message, Upload } from '../rc-api/schemas.ts';
 import { formatMessage, formatRoom, parseMessageRef, REASON_HINTS } from './format.ts';
 
@@ -547,9 +550,11 @@ async function decryptUploadMeta(app: App, upload: Upload, facts: FileFacts): Pr
   facts.sha256 ??= meta.hashes?.sha256;
 }
 
+/** `signal` is the MCP request's: a cancelled call stops the download instead of finishing it in the background. */
 export async function getFile(
   app: App,
   args: { file_id?: string; message_id?: string; max_inline_bytes?: number },
+  signal?: AbortSignal,
 ): Promise<FileResult> {
   if (!args.file_id && !args.message_id) throw new ToolError('invalid-argument', 'Provide file_id or message_id.');
   if (args.file_id && !ID_PATTERN.test(args.file_id))
@@ -632,7 +637,32 @@ export async function getFile(
   }
 
   const path = facts.path ?? `/file-upload/${facts.fileId}/${encodeURIComponent(facts.name ?? facts.fileId)}`;
-  const downloaded = await app.client.download(new URL(path, 'http://x').pathname);
+  // Downloads have no size limit of their own. Stop early only where the file could not be used anyway: ephemeral
+  // mode returns everything inline (at most MAX_EPHEMERAL_BINARY_BYTES), and decryption takes MAX_DECRYPT_BYTES.
+  const ephemeralTooLarge = (size: string) =>
+    new ToolError(
+      'file-too-large',
+      `The file is ${size}; in ephemeral mode files are only returned inline (limit ${MAX_EPHEMERAL_BINARY_BYTES}).`,
+      'Disable RC_MCP_EPHEMERAL to have large files saved to the private data directory.',
+    );
+  const limit = app.config.ephemeral
+    ? MAX_EPHEMERAL_BINARY_BYTES
+    : facts.encryption
+      ? MAX_DECRYPT_BYTES
+      : Number.POSITIVE_INFINITY;
+  let downloaded: DownloadResult;
+  try {
+    downloaded = await app.client.download(new URL(path, 'http://x').pathname, limit, signal);
+  } catch (error) {
+    if (!(error instanceof RcApiError && error.code === 'too-large')) throw error;
+    if (app.config.ephemeral) throw ephemeralTooLarge(`larger than ${limit} bytes`);
+    throw new ToolError(
+      'file-too-large',
+      `The encrypted file is larger than ${MAX_DECRYPT_BYTES} bytes, the most WebCrypto can decrypt in one piece.`,
+      'Open it in the official Rocket.Chat client instead.',
+    );
+  }
+  signal?.throwIfAborted();
   const result = facts.encryption
     ? await decryptFile(downloaded.bytes, facts.encryption, facts.sha256)
     : { bytes: downloaded.bytes, integrity: 'unverified' as const };
@@ -659,13 +689,7 @@ export async function getFile(
   }
   if (app.config.ephemeral) {
     // Ephemeral mode never writes decrypted content to disk.
-    if (bytes.length > MAX_EPHEMERAL_BINARY_BYTES) {
-      throw new ToolError(
-        'file-too-large',
-        `The file is ${bytes.length} bytes; in ephemeral mode files are only returned inline (limit ${MAX_EPHEMERAL_BINARY_BYTES}).`,
-        'Disable RC_MCP_EPHEMERAL to have large files saved to the private data directory.',
-      );
-    }
+    if (bytes.length > MAX_EPHEMERAL_BINARY_BYTES) throw ephemeralTooLarge(`${bytes.length} bytes`);
     return { meta: { ...meta, inline: true }, blob: { data: base64(), mimeType: type } };
   }
   const dir = app.filesDir;
@@ -679,7 +703,14 @@ export async function getFile(
       180,
     );
   const target = join(dir, safeName);
-  writeFileSync(target, bytes, { mode: 0o600 });
+  signal?.throwIfAborted();
+  // fs/promises writes in slices; writeFileSync refuses buffers above 2^31 - 1 bytes. Never leave a partial file.
+  try {
+    await writeFile(target, bytes, { mode: 0o600 });
+  } catch (error) {
+    await rm(target, { force: true }).catch(() => undefined);
+    throw error;
+  }
   return { meta: { ...meta, inline: false, saved_to: target } };
 }
 

@@ -209,13 +209,21 @@ export class FakeRc {
     }
   }
 
-  async download(path: string): Promise<{ bytes: Uint8Array<ArrayBuffer>; contentType: string | undefined }> {
+  /** Size limits passed by callers, in call order (the real client has no default limit). */
+  downloadLimits: number[] = [];
+
+  async download(
+    path: string,
+    maxBytes = Number.POSITIVE_INFINITY,
+    signal?: AbortSignal,
+  ): Promise<{ bytes: Uint8Array<ArrayBuffer>; contentType: string | undefined }> {
+    this.downloadLimits.push(maxBytes);
+    signal?.throwIfAborted();
     if (this.down) throw new RcApiError('network', 'file-upload', 'network error downloading file');
     const id = path.split('/')[2] ?? '';
-    return {
-      bytes: new Uint8Array(readFileSync(join(this.dir, 'files', `${id}.bin`))),
-      contentType: 'application/octet-stream',
-    };
+    const bytes = new Uint8Array(readFileSync(join(this.dir, 'files', `${id}.bin`)));
+    if (bytes.length > maxBytes) throw new RcApiError('too-large', 'file-upload', `file is ${bytes.length} bytes`);
+    return { bytes, contentType: 'application/octet-stream' };
   }
 
   async serverInfo() {

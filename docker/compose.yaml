@@ -8,14 +8,17 @@ name: rocketchat-e2ee-mcp
 services:
   mongodb:
     # Rocket.Chat 8.9 CI certifies MongoDB 8.0 only (compatibleMongoVersions: ["8.0"]).
-    image: docker.io/mongodb/mongodb-community-server:8.0-ubi8
+    # ubi9, not ubi8: the GLIBC_TUNABLES workaround below needs a glibc that registers rseq (2.34 here; ubi8's
+    # 2.28 cannot, so tcmalloc keeps its per-CPU caches and mongod still refuses to start).
+    image: docker.io/mongodb/mongodb-community-server:8.0-ubi9
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     restart: unless-stopped
     environment:
-      # MongoDB 8.0 refuses to start on Linux 6.19+ (tcmalloc vs. rseq, SERVER-121912), as on current GitHub
-      # runners. The image sets glibc.pthread.rseq=0 so tcmalloc can use rseq per-CPU caches; letting glibc
-      # register rseq again makes tcmalloc fall back to per-thread caches. Unofficial workaround (see
-      # docker-library/mongo#765); drop it once the stack runs on a MongoDB/kernel pair without the bug.
+      # MongoDB 8.0 refuses to start on Linux 6.19+ while tcmalloc's rseq per-CPU caches are active (SERVER-121912),
+      # as on current GitHub runners. The image sets glibc.pthread.rseq=0 so tcmalloc can own rseq; letting glibc
+      # register it instead makes tcmalloc fall back to per-thread caches (`serverStatus().tcmalloc
+      # .usingPerCPUCaches` is false). Unofficial workaround; drop it once the stack runs on a MongoDB/kernel pair
+      # without the bug (kernel 7.0.14+).
       GLIBC_TUNABLES: glibc.pthread.rseq=1
     volumes:
       - mongodb_data:/data/db

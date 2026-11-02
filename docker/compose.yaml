@@ -11,6 +11,12 @@ services:
     image: docker.io/mongodb/mongodb-community-server:8.0-ubi8
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     restart: unless-stopped
+    environment:
+      # MongoDB 8.0 refuses to start on Linux 6.19+ (tcmalloc vs. rseq, SERVER-121912), as on current GitHub
+      # runners. The image sets glibc.pthread.rseq=0 so tcmalloc can use rseq per-CPU caches; letting glibc
+      # register rseq again makes tcmalloc fall back to per-thread caches. Unofficial workaround (see
+      # docker-library/mongo#765); drop it once the stack runs on a MongoDB/kernel pair without the bug.
+      GLIBC_TUNABLES: glibc.pthread.rseq=1
     volumes:
       - mongodb_data:/data/db
     healthcheck:

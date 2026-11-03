@@ -25,7 +25,7 @@
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { type Browser, type BrowserContext, chromium, expect, type Page } from '@playwright/test';
+import { type Browser, type BrowserContext, chromium, expect, type Locator, type Page } from '@playwright/test';
 import {
   ADMIN,
   ApiError,
@@ -349,13 +349,46 @@ async function sendMain(actor: Actor, text: string): Promise<string> {
   return lastMessageId(page);
 }
 
-/** Finds a message in the (virtualized) main list, scrolling up until it is mounted. */
+const mainItem = (page: Page, id: string) => mainList(page).locator(`[role="listitem"][id="${id}"]`).first();
+
+/**
+ * Walks the main list from the top to the bottom, most of a viewport at a time, calling `visit` after each step
+ * until it returns true; returns whether it did. The list is virtualized (virtua's VList mounts the viewport plus
+ * file messages), so a message is in the DOM only while it is near the viewport: steps shorter than the viewport
+ * mount every message at least once.
+ */
+async function sweepList(page: Page, visit: () => Promise<boolean>): Promise<boolean> {
+  /** Scrolls to the top, or one step down; true when the list cannot scroll further down. */
+  const scroll = (to: 'top' | 'down') =>
+    mainList(page).evaluate((list, to) => {
+      // Runs in the page; this project has no DOM types.
+      type Box = { scrollTop: number; scrollHeight: number; clientHeight: number; parentElement: Box | null };
+      // biome-ignore lint/suspicious/noExplicitAny: see above.
+      const overflowY = (e: Box): string => (globalThis as any).getComputedStyle(e).overflowY;
+      let el: Box | null = list as unknown as Box;
+      while (el && !(el.scrollHeight > el.clientHeight && /auto|scroll/.test(overflowY(el)))) {
+        el = el.parentElement;
+      }
+      if (!el) return true;
+      const before = el.scrollTop;
+      el.scrollTop = to === 'top' ? 0 : before + Math.floor(el.clientHeight * 0.8);
+      return to === 'down' && el.scrollTop === before;
+    }, to);
+  await scroll('top');
+  for (let i = 0; i < 200; i++) {
+    await page.waitForTimeout(150);
+    if (await visit()) return true;
+    if (await scroll('down')) break;
+  }
+  await page.waitForTimeout(150);
+  return visit();
+}
+
+/** Finds a message in the main list, walking the list if it is not mounted, and scrolls it into view. */
 async function messageById(page: Page, id: string) {
-  const loc = page.locator(`[role="listitem"][id="${id}"]`).first();
-  for (let i = 0; i < 40 && (await loc.count()) === 0; i++) {
-    await mainList(page).hover({ position: { x: 200, y: 80 } });
-    await page.mouse.wheel(0, -1500);
-    await page.waitForTimeout(250);
+  const loc = mainItem(page, id);
+  if ((await loc.count()) === 0 && !(await sweepList(page, async () => (await loc.count()) > 0))) {
+    throw new Error(`message ${id} is not in the message list`);
   }
   await loc.scrollIntoViewIfNeeded();
   return loc;
@@ -469,29 +502,54 @@ async function openRoomFromSidebar(actor: Actor, label: string, rid: string) {
 const PLACEHOLDER = 'This message is end-to-end encrypted';
 
 /**
- * Records what the real client displays for each message. Waits (bounded) for the client to finish decrypting,
- * unless `undecryptable` says the client is not expected to be able to (it then shows the placeholder).
+ * Records what the real client displays for each message: those already mounted, then the rest while walking the
+ * list. Waits (bounded) for the client to finish decrypting, unless `undecryptable` says the client is not expected
+ * to be able to (it then shows the placeholder). Returns the ids it could not find in the list.
  */
-async function captureRendered(actor: Actor, ids: string[], undecryptable: string[] = []) {
-  for (const id of ids) {
-    const loc = actor.page.locator(`[id="${id}"]`).first();
-    if ((await loc.count()) === 0) {
-      await messageById(actor.page, id).catch(() => undefined);
+async function captureRendered(actor: Actor, ids: string[], undecryptable: string[] = []): Promise<string[]> {
+  const left = new Set(ids);
+  const recordMounted = async () => {
+    for (const id of [...left]) {
+      const loc = mainItem(actor.page, id);
       if ((await loc.count()) === 0) continue;
+      await recordMessage(actor, id, loc, undecryptable.includes(id));
+      left.delete(id);
     }
-    const body = loc.locator('[role="document"][aria-roledescription="message body"]').first();
-    // What the user sees: innerText applies rendered line breaks and skips hidden nodes; textContent does neither.
-    // biome-ignore lint/performance/useDomNodeTextContent: the fixture must record the displayed text.
-    const read = async () => ((await body.count()) ? await body.innerText() : await loc.innerText());
-    let text = await read();
-    for (let i = 0; i < 30 && text.includes(PLACEHOLDER) && !undecryptable.includes(id); i++) {
-      await actor.page.waitForTimeout(500);
-      text = await read();
-    }
-    const byPhase = rendered[actor.who] ?? {};
-    byPhase[phase] = { ...byPhase[phase], [id]: text };
-    rendered[actor.who] = byPhase;
+    return left.size === 0;
+  };
+  if (!(await recordMounted())) await sweepList(actor.page, recordMounted);
+  return [...left];
+}
+
+/** `captureRendered` for a page that must show every message; fails loudly otherwise. */
+async function captureAll(actor: Actor, ids: string[], undecryptable: string[] = []) {
+  const missing = await captureRendered(actor, ids, undecryptable);
+  if (missing.length) {
+    await shot(actor.page, `FAIL-capture-${actor.who}`);
+    throw new Error(`${actor.username}: message(s) not in the message list: ${missing.join(', ')}`);
   }
+}
+
+async function recordMessage(actor: Actor, id: string, item: Locator, undecryptable: boolean) {
+  // The message's own body: a quote renders the quoted message's body before it, a pending message shows only the
+  // placeholder body, and a file message without text shows its description body.
+  const body = async () => {
+    const own = item.locator(`[id="${id}-content"]`);
+    if (await own.count()) return own;
+    const any = item.locator('[role="document"][aria-roledescription="message body"]').first();
+    return (await any.count()) ? any : item;
+  };
+  // What the user sees: innerText applies rendered line breaks and skips hidden nodes; textContent does neither.
+  // biome-ignore lint/performance/useDomNodeTextContent: the fixture must record the displayed text.
+  const read = async () => (await body()).innerText();
+  let text = await read();
+  for (let i = 0; i < 30 && text.includes(PLACEHOLDER) && !undecryptable; i++) {
+    await actor.page.waitForTimeout(500);
+    text = await read();
+  }
+  const byPhase = rendered[actor.who] ?? {};
+  byPhase[phase] = { ...byPhase[phase], [id]: text };
+  rendered[actor.who] = byPhase;
 }
 
 /** E2E_message_encrypted_placeholder (en.i18n.json at 8.9.0): the body of a message the client has not processed. */
@@ -607,12 +665,13 @@ async function captureConverged(member: Actor, group: GroupKeys, ids: string[], 
     if (!problem) {
       const byPhase = rendered[member.who];
       if (byPhase) byPhase[phase] = {};
-      await captureRendered(member, ids);
+      const missing = await captureRendered(member, ids);
       const undecrypted = Object.entries(rendered[member.who]?.[phase] ?? {}).filter(([, text]) =>
         text.startsWith(PLACEHOLDER),
       );
       problem =
         failures() ||
+        (missing.length ? `message(s) not in the message list: ${missing.join(', ')}` : '') ||
         (undecrypted.length ? `${undecrypted.length} message(s) not decrypted: ${undecrypted.map(([id]) => id)}` : '');
     }
     if (!problem) return;
@@ -976,9 +1035,9 @@ async function main() {
 
     // What the real client rendered before the reset (both members).
     await openRoomFromSidebar(alice, GROUP_NAME, groupRid);
-    await captureRendered(alice, [m1, m2, m3, m5, m6, m7, m8]);
+    await captureAll(alice, [m1, m2, m3, m5, m6, m7, m8]);
     await bob.page.goto(`/direct/${dmRid}`);
-    await captureRendered(bob, [d1, d2, d3]);
+    await captureAll(bob, [d1, d2, d3]);
 
     // 4. alice + bob go offline; the admin joins without a key and resets the room key.
     await alice.page.close();
@@ -1094,7 +1153,7 @@ async function main() {
       await captureConverged(member, group, [m1, m2, m3, m5, m6, m7, m8, p1, p2, p4]);
     }
     await admin.page.waitForTimeout(3000);
-    await captureRendered(admin, [m1, m2, p1, p2, p4], [m1, m2]);
+    await captureAll(admin, [m1, m2, p1, p2, p4], [m1, m2]);
     await shot(alice.page, 'alice-final');
     await shot(admin.page, 'admin-final');
 

@@ -74,7 +74,7 @@ jobs:
       # Writes the fresh capture to .local/ground-truth/$RC_VERSION and screenshots to .local/ground-truth-shots.
       - name: Ground-truth tests (real web client)
         run: mise run test:ground-truth
-        timeout-minutes: 30
+        timeout-minutes: 15
 
       # Needs the ground-truth run recorded in .local/stack.json; still runs if only the ground-truth
       # assertions failed, so both results are visible.

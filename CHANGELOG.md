@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- The ground-truth run takes about a minute and a half instead of ten and records what the real client shows for
+  every message in the room, not only those it reached by scrolling up: the fixture generator walks the virtualized
+  message list from the top instead of searching upwards with a timeout per message. It records a quote's own text
+  rather than the quoted message's.
+
 ## [0.2.0] - 2026-11-03
 
 ### Changed

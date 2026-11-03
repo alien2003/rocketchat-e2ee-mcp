@@ -13,7 +13,8 @@
  *   3. Messages: plain, long multi-paragraph, markdown, a thread reply, an edit, a quote, text + image uploads.
  *   4. alice and bob go offline; the admin is invited, has no room key (WAITING_KEYS) and resets the room key
  *      from the room's "Disable E2E encryption" dialog ("Reset encryption keys").
- *   5. alice and bob come back, receive the new key from the admin's client, and post more messages
+ *   5. The admin's client hands the new key to alice and bob while they are offline; they come back once the
+ *      server holds it, wait until their clients decrypt the admin's post-reset message, and post more messages
  *      (incl. a post-reset thread reply and upload).
  *   6. Dump raw REST responses, MongoDB documents and encrypted file bytes + the expected plaintext and what the
  *      real client rendered.
@@ -69,6 +70,13 @@ let phase: 'pre-reset' | 'post-reset' = 'pre-reset';
 
 function step(msg: string) {
   console.error(`[gt ${new Date().toISOString().slice(11, 19)}] ${msg}`);
+}
+
+let fallbacks = 0;
+/** A recovery step (extra reload) taken because the real client had not converged; always logged and counted. */
+function fallback(msg: string) {
+  fallbacks++;
+  step(`fallback #${fallbacks}: ${msg}`);
 }
 
 // ----------------------------------------------------------------------------------------------- texts
@@ -173,6 +181,8 @@ interface Actor {
   context: BrowserContext;
   page: Page;
   e2eePassword?: string;
+  /** Room ids of the decryption failures this member's client logged, in order (from its E2E debug logger). */
+  decryptFailures: string[];
 }
 
 async function newActor(
@@ -193,11 +203,17 @@ async function newActor(
       'true',
     ),
   );
+  const decryptFailures: string[] = [];
+  let decryptFailed = false;
   context.on('console', (m) => {
-    consoleLogs.push(`${new Date().toISOString().slice(11, 23)} [${who}] ${m.type()}: ${m.text().slice(0, 500)}`);
+    const text = m.text();
+    consoleLogs.push(`${new Date().toISOString().slice(11, 23)} [${who}] ${m.type()}: ${text.slice(0, 500)}`);
+    // An error-level span prints its title (red style), then its attributes, incl. the room id, via console.dir.
+    if (decryptFailed && m.type() === 'dir') decryptFailures.push(/\brid: (\w+)/.exec(text)?.[1] ?? '?');
+    decryptFailed = text.includes('[E2E:Room:decrypt]') && text.includes('background-color: red');
   });
   const page = await context.newPage();
-  return { who, username, password, session, context, page };
+  return { who, username, password, session, context, page, decryptFailures };
 }
 
 const consoleLogs: string[] = [];
@@ -250,23 +266,59 @@ async function uiSetupE2EE(actor: Actor): Promise<string> {
   return password;
 }
 
-/** Room E2EE state as seen by the real client (same technique as RC's own e2ee specs). */
-function clientRoomState(page: Page, rid: string): Promise<string | undefined> {
+/**
+ * Room E2EE state as seen by the real client (same technique as RC's own e2ee specs): its state, the id of the
+ * room key it holds, and the ids of the old room keys it has decrypted from `oldRoomKeys`.
+ */
+function clientRoomKeys(page: Page, rid: string) {
   return page.evaluate(async (roomId) => {
     // biome-ignore lint/suspicious/noExplicitAny: Meteor's in-page module loader is untyped.
     const req = (globalThis as any).require as (id: string) => any;
     const { e2e } = req('/client/lib/e2ee/rocketchat.e2e.ts');
     const room = await e2e.getInstanceByRoomId(roomId);
-    return room?.getState();
+    const oldKeys: Array<{ E2EKey: unknown; e2eKeyId: string }> = room?.oldKeys ?? [];
+    return {
+      state: room?.getState() as string | undefined,
+      keyID: room?.keyID as string | undefined,
+      // The client keeps an entry with a null key for an old key it could not decrypt.
+      oldKeyIds: oldKeys.filter((k) => k.E2EKey).map((k) => k.e2eKeyId),
+    };
   }, rid);
 }
 
-async function waitRoomReady(actor: Actor, rid: string) {
+/**
+ * Waits until the client's room is READY; with `keyId`, READY with that room key. A page opened after a room key
+ * reset first restores the pre-reset room from the client's cache and reaches READY with the old key.
+ */
+async function waitRoomReady(actor: Actor, rid: string, keyId?: string) {
   await poll(
-    `${actor.username} room ${rid} READY`,
-    async () => (await clientRoomState(actor.page, rid)) === 'READY',
+    `${actor.username} room ${rid} READY${keyId ? ` with key ${keyId}` : ''}`,
+    async () => {
+      const room = await clientRoomKeys(actor.page, rid);
+      return room.state === 'READY' && (!keyId || room.keyID === keyId);
+    },
     120_000,
   );
+}
+
+/** Key id of a wrapped room key (`E2EKey`, `E2ESuggestedKey`): the prefix before 344 chars of base64 RSA output. */
+const wrappedKeyId = (wrapped: unknown) => (typeof wrapped === 'string' ? wrapped.slice(0, -344) : undefined);
+
+/**
+ * Waits until the server holds room key `keyId` for this member (as E2EKey, or as an E2ESuggestedKey its client has
+ * not accepted yet). After a reset, the key reaches offline members at an online member's key-distribution tick.
+ */
+async function waitKeyDelivered(actor: Actor, rid: string, keyId: string) {
+  const started = Date.now();
+  await poll(
+    `server holds room key ${keyId} for ${actor.username}`,
+    async () => {
+      const sub = (await api(`subscriptions.getOne?roomId=${rid}`, { auth: actor.session })).subscription as Json;
+      return wrappedKeyId(sub.E2EKey) === keyId || wrappedKeyId(sub.E2ESuggestedKey) === keyId;
+    },
+    60_000,
+  );
+  step(`server holds the new room key for ${actor.username} (waited ${((Date.now() - started) / 1000).toFixed(1)} s)`);
 }
 
 const mainList = (page: Page) => page.getByRole('list', { name: 'Message list', exact: true });
@@ -397,14 +449,14 @@ async function uploadFile(
 }
 
 /** Full navigation (page reload). Never use it on a client that may be handing out room keys. */
-async function goToGroup(actor: Actor, name: string, rid: string) {
+async function goToGroup(actor: Actor, name: string, rid: string, keyId?: string) {
   await actor.page.goto(`/group/${name}`);
-  await waitInRoom(actor, rid);
+  await waitInRoom(actor, rid, keyId);
 }
 
 /** Waits until the already-open room is usable, without reloading the page. */
-async function waitInRoom(actor: Actor, rid: string) {
-  await waitRoomReady(actor, rid);
+async function waitInRoom(actor: Actor, rid: string, keyId?: string) {
+  await waitRoomReady(actor, rid, keyId);
   await expect(mainList(actor.page)).toBeVisible({ timeout: 60_000 });
 }
 
@@ -439,6 +491,136 @@ async function captureRendered(actor: Actor, ids: string[], undecryptable: strin
     const byPhase = rendered[actor.who] ?? {};
     byPhase[phase] = { ...byPhase[phase], [id]: text };
     rendered[actor.who] = byPhase;
+  }
+}
+
+/** E2E_message_encrypted_placeholder (en.i18n.json at 8.9.0): the body of a message the client has not processed. */
+const PENDING_PLACEHOLDER = 'This message is end-to-end encrypted. To view it, you must enter your encryption key';
+
+/**
+ * Waits until the client shows `msgId` without `marker` in its body; `state` names the condition in logs. A message
+ * whose history reached the page while its room was not READY stays pending (no toolbar) for the life of the page
+ * once the room's one-time READY handlers have run, and one decrypted with a stale key keeps its error. Neither
+ * recovers without a reload, so after a bounded wait this reloads the page (`reopen`) like a user would.
+ */
+async function waitShown(
+  actor: Actor,
+  msgId: string,
+  marker: string,
+  state: string,
+  reopen: () => Promise<void>,
+  { atBottom = false, reloads = 2 } = {},
+) {
+  for (let attempt = 0; ; attempt++) {
+    // A fresh page opens the list at the bottom and mounts only the viewport: the newest message is in the DOM once
+    // history arrives, older ones only after scrolling up (which would unmount the newest).
+    if (atBottom) {
+      const item = actor.page.locator(`[role="listitem"][id="${msgId}"]`).first();
+      await item.waitFor({ state: 'attached', timeout: 15_000 }).catch(() => undefined);
+    }
+    const body = (await messageById(actor.page, msgId))
+      .locator('[role="document"][aria-roledescription="message body"]')
+      .first();
+    const shown = async () => !((await body.textContent({ timeout: 5000 })) ?? '').includes(marker);
+    const ok = await expect
+      .poll(shown, { timeout: 10_000 })
+      .toBe(true)
+      .then(
+        () => true,
+        () => false,
+      );
+    if (ok) return;
+    if (attempt === reloads) {
+      await shot(actor.page, `FAIL-not-${state}-${actor.who}`);
+      throw new Error(`${actor.username}: message ${msgId} not ${state} after ${reloads} reloads`);
+    }
+    fallback(`${actor.username}: ${msgId} not ${state} with the room READY; reloading (${attempt + 1}/${reloads})`);
+    await reopen();
+  }
+}
+
+/** Fails loudly when the decrypt-failure detector in `newActor` cannot be trusted (see `checkFailureDetector`). */
+function assertParsedFailures(actor: Actor) {
+  if (actor.decryptFailures.includes('?')) {
+    throw new Error(
+      `${actor.username}: a decryption-failure log line had no room id; the client's E2E logger format changed`,
+    );
+  }
+}
+
+/**
+ * Positive control for the decrypt-failure detector: the admin's client cannot decrypt the pre-reset messages (it
+ * never had the old key), so it must have logged failures for the group. If it did not, the logger's format has
+ * changed and `captureConverged` would accept page loads it should discard.
+ */
+async function checkFailureDetector(admin: Actor, rid: string) {
+  try {
+    await poll(`admin's decryption failures for ${rid}`, async () => admin.decryptFailures.includes(rid), 30_000);
+  } catch {
+    throw new Error(
+      `decrypt-failure detection is not working: the admin's client logged no failure for ${rid}; ` +
+        "check the client's E2E logger format",
+    );
+  }
+  assertParsedFailures(admin);
+}
+
+interface GroupKeys {
+  name: string;
+  rid: string;
+  keyId: string;
+  oldKeyId: string;
+}
+
+/**
+ * Opens the member's group page afresh (a full page load) and records what it renders once the client has
+ * converged: READY with the current room key, the old key decrypted from oldRoomKeys, no decryption failure logged
+ * for the room by this page load, and every captured message decrypted. The client reports READY before it has
+ * decrypted the old keys; history processed in between keeps the incorrect-key error for the life of the page, so
+ * such a page load is discarded and the page reloaded (bounded). Rendered text is only ever accepted or rejected.
+ */
+async function captureConverged(member: Actor, group: GroupKeys, ids: string[], loads = 3) {
+  for (let load = 1; ; load++) {
+    const mark = member.decryptFailures.length;
+    const failures = () => {
+      assertParsedFailures(member);
+      const n = member.decryptFailures.slice(mark).filter((rid) => rid === group.rid).length;
+      return n ? `the client logged ${n} decryption failure(s) for the room` : '';
+    };
+    await goToGroup(member, group.name, group.rid, group.keyId);
+    let seen: Awaited<ReturnType<typeof clientRoomKeys>> | undefined;
+    let problem = await poll(
+      `${member.username} room ${group.rid} READY with key ${group.keyId} and old key ${group.oldKeyId}`,
+      async () => {
+        seen = await clientRoomKeys(member.page, group.rid);
+        return seen.state === 'READY' && seen.keyID === group.keyId && seen.oldKeyIds.includes(group.oldKeyId);
+      },
+      20_000,
+    ).then(
+      () => '',
+      () => `the room did not converge (last seen: ${JSON.stringify(seen ?? null)})`,
+    );
+    if (!problem) {
+      await member.page.waitForTimeout(3000);
+      problem = failures();
+    }
+    if (!problem) {
+      const byPhase = rendered[member.who];
+      if (byPhase) byPhase[phase] = {};
+      await captureRendered(member, ids);
+      const undecrypted = Object.entries(rendered[member.who]?.[phase] ?? {}).filter(([, text]) =>
+        text.startsWith(PLACEHOLDER),
+      );
+      problem =
+        failures() ||
+        (undecrypted.length ? `${undecrypted.length} message(s) not decrypted: ${undecrypted.map(([id]) => id)}` : '');
+    }
+    if (!problem) return;
+    if (load === loads) {
+      await shot(member.page, `FAIL-converge-${member.who}`);
+      throw new Error(`${member.username}: client did not converge in ${loads} page loads (${problem})`);
+    }
+    fallback(`${member.username}: ${problem}; reloading (${load}/${loads - 1})`);
   }
 }
 
@@ -810,7 +992,7 @@ async function main() {
     await expect(admin.page.getByText('Check back later')).toBeVisible({ timeout: 60_000 });
     await poll(
       'admin room WAITING_KEYS',
-      async () => (await clientRoomState(admin.page, groupRid)) === 'WAITING_KEYS',
+      async () => (await clientRoomKeys(admin.page, groupRid)).state === 'WAITING_KEYS',
       60_000,
     );
     await shot(admin.page, 'admin-waiting-keys');
@@ -852,8 +1034,16 @@ async function main() {
     // 5. alice and bob return; the admin's client hands them the new key.
     alice.page = await alice.context.newPage();
     bob.page = await bob.context.newPage();
-    await goToGroup(alice, GROUP_NAME, groupRid);
-    await goToGroup(bob, GROUP_NAME, groupRid);
+    // Their pages restore the pre-reset room from the client's cache and report READY with the old key until the
+    // update arrives; open them once the key is on the server, and wait for READY with the new key. The client's
+    // keyID is only a label (it is set before the key arrives), so also wait until the page has decrypted P1, the
+    // admin's message under the new key: only a page holding that key can show it.
+    for (const member of [alice, bob]) {
+      const reopen = () => goToGroup(member, GROUP_NAME, groupRid, secondKeyId);
+      await waitKeyDelivered(member, groupRid, secondKeyId);
+      await reopen();
+      await waitShown(member, p1, PLACEHOLDER, 'decrypted', reopen, { atBottom: true });
+    }
     step('alice and bob received the new room key');
     const p2 = await sendMain(alice, TEXT.postResetAlice);
     expected.push({
@@ -865,6 +1055,9 @@ async function main() {
       text: TEXT.postResetAlice,
     });
     await bob.page.waitForTimeout(1500);
+    // M1 may show the incorrect-key error here (this page cleared its old keys at the reset), but it must not be
+    // pending: a pending message has no toolbar, so it cannot be replied to.
+    await waitShown(bob, m1, PENDING_PLACEHOLDER, 'processed', () => goToGroup(bob, GROUP_NAME, groupRid, secondKeyId));
     await openThread(bob, m1);
     const p3 = await sendThread(bob, m1, TEXT.postResetThread);
     expected.push({
@@ -895,11 +1088,10 @@ async function main() {
 
     // What the real clients render after the reset, from a fresh page load (old messages via oldRoomKeys).
     phase = 'post-reset';
+    const group = { name: GROUP_NAME, rid: groupRid, keyId: secondKeyId, oldKeyId: firstKeyId };
+    await checkFailureDetector(admin, groupRid);
     for (const member of [alice, bob]) {
-      await member.page.reload();
-      await goToGroup(member, GROUP_NAME, groupRid);
-      await member.page.waitForTimeout(3000);
-      await captureRendered(member, [m1, m2, m3, m5, m6, m7, m8, p1, p2, p4]);
+      await captureConverged(member, group, [m1, m2, m3, m5, m6, m7, m8, p1, p2, p4]);
     }
     await admin.page.waitForTimeout(3000);
     await captureRendered(admin, [m1, m2, p1, p2, p4], [m1, m2]);
@@ -999,7 +1191,7 @@ async function main() {
       dmRoomId: dmRid,
     };
     writeStack(stack);
-    step(`done: ${expected.length} messages, fixtures in ${OUT}`);
+    step(`done: ${expected.length} messages, ${fallbacks} fallback(s), fixtures in ${OUT}`);
   } catch (error) {
     for (const a of [alice, bob, admin]) {
       if (!a.page.isClosed()) await shot(a.page, `FAIL-${a.who}`);

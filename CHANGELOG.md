@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-03
+
 ### Changed
 
 - File downloads are no longer capped at 50 MiB. The download timeout is now an inactivity timeout (no data for
@@ -16,12 +18,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   before, `file-too-large`), and above 2 GiB − 1 byte for encrypted files (`file-too-large`), the most Node's
   WebCrypto decrypts in one operation. Saved files are written in slices, so unencrypted files above 2 GiB work.
 - A cancelled `get_file` call aborts its download instead of finishing it in the background.
+- Development: Biome 2.6.2. Dependabot no longer proposes `@types/node` major versions, which must match the oldest
+  supported Node release (24).
 
 ### Fixed
 
 - A file download that stalls is reported as `rocketchat-timeout`, and a connection lost in the middle of one as
   `rocketchat-network`; both used to surface as `internal-error` (or `rocketchat-network` for a stall before the
   response headers).
+- The compose test stack starts on Linux 6.19+ hosts, such as current GitHub runners, where MongoDB 8.0 refused to
+  start while tcmalloc's per-CPU caches were active (SERVER-121912). It now uses the `8.0-ubi9` image with
+  `GLIBC_TUNABLES=glibc.pthread.rseq=1`.
+- The ground-truth run no longer fails intermittently after the room-key reset. The fixture generator waits until
+  alice's and bob's clients hold the new key (shown by decrypting a message sent under it), reloads a page whose
+  history the client left pending, and records only what a client that has converged renders; every such reload
+  is logged as a fallback. Committed fixtures are unchanged.
 
 ## [0.1.0] - 2026-10-15
 
@@ -164,5 +175,6 @@ against Rocket.Chat 8.9.0.
   that Rocket.Chat hides without reporting them (`Message_KeepHistory` on, `Message_ShowDeletedStatus` off) stay in
   the local index until `rc-mcp sync <room> --full`; this limitation is documented in the README and SECURITY.md.
 
-[Unreleased]: https://github.com/alien2003/rocketchat-e2ee-mcp/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/alien2003/rocketchat-e2ee-mcp/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/alien2003/rocketchat-e2ee-mcp/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/alien2003/rocketchat-e2ee-mcp/releases/tag/v0.1.0

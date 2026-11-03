@@ -7,10 +7,10 @@ and hands the plaintext to an MCP client. Security reports are very welcome.
 
 | Version | Supported |
 | ------- | --------- |
-| 0.1.x   | Yes       |
-| < 0.1   | No        |
+| 0.2.x   | Yes       |
+| < 0.2   | No        |
 
-Fixes land in the latest 0.1.x release. Rocket.Chat 8.9.0 is the only server version tested against real-client
+Fixes land in the latest 0.2.x release. Rocket.Chat 8.9.0 is the only server version tested against real-client
 ground truth. Other server versions are untested; a report against one of them may first need fixtures for that
 version (see [CONTRIBUTING.md](CONTRIBUTING.md#supporting-a-new-rocketchat-version)).
 

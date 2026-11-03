@@ -332,7 +332,7 @@ steps 3 and 4 and everywhere below:
 - **GitHub release tarball:**
 
   ```sh
-  npx -y https://github.com/alien2003/rocketchat-e2ee-mcp/releases/download/v0.1.0/rocketchat-e2ee-mcp-0.1.0.tgz
+  npx -y https://github.com/alien2003/rocketchat-e2ee-mcp/releases/download/v0.2.0/rocketchat-e2ee-mcp-0.2.0.tgz
   ```
 
 - **Source build** (needs [mise](https://mise.jdx.dev)):
@@ -345,7 +345,7 @@ steps 3 and 4 and everywhere below:
   Then run `node /path/to/rocketchat-e2ee-mcp/dist/cli/main.js`. With Claude Code, that is
   `claude mcp add rocketchat -e … -- node /path/to/rocketchat-e2ee-mcp/dist/cli/main.js`.
 
-Once the package is on npm, you can pin a version with `npx -y rocketchat-e2ee-mcp@0.1.0`.
+Once the package is on npm, you can pin a version with `npx -y rocketchat-e2ee-mcp@0.2.0`.
 
 ### Other ways to register with Claude Code
 

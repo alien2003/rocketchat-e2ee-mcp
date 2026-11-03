@@ -21,7 +21,7 @@ body:
     attributes:
       label: rc-mcp version
       description: Output of `rc-mcp --version` (or `npx -y rocketchat-e2ee-mcp --version`).
-      placeholder: 0.1.0
+      placeholder: 0.2.0
     validations:
       required: true
 

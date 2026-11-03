@@ -1,6 +1,6 @@
 {
   "name": "rocketchat-e2ee-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Read-only MCP server for Rocket.Chat that decrypts end-to-end encrypted rooms locally with your own keys, so Claude Code can browse and search team chat.",
   "keywords": [
     "mcp",

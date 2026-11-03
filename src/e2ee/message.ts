@@ -55,7 +55,7 @@ export async function decryptWithKeyring(
   if (!keyring) throw new E2eeError('no-room-key', 'no room key available for this room');
   const candidates = keyring.candidatesFor(decoded.kid);
   if (candidates.length === 0) {
-    throw new E2eeError(keyring.problems.length ? 'room-key-undecryptable' : 'no-room-key', describe(keyring));
+    throw new E2eeError(keyring.problems.length ? 'room-key-undecryptable' : 'no-room-key', noKeyDetail(keyring));
   }
   let exactError: unknown;
   let fallbackError: unknown;
@@ -81,7 +81,7 @@ export async function decryptWithKeyring(
   throw exactError ?? fallbackError;
 }
 
-function describe(keyring: RoomKeyring): string {
+function noKeyDetail(keyring: RoomKeyring): string {
   if (keyring.problems.length) {
     return `room key(s) ${keyring.problems.map((p) => p.keyId || '(no id)').join(', ')} could not be unwrapped`;
   }

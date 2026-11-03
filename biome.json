@@ -2,7 +2,16 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    "includes": ["**", "!**/test/fixtures/**/*.json", "!**/dist", "!**/.local", "!**/pnpm-lock.yaml"]
+    "includes": [
+      "**",
+      "!**/test/fixtures/**/*.json",
+      "!**/dist",
+      "!**/.local",
+      "!**/pnpm-lock.yaml",
+      "!**/*.md",
+      "!**/*.yml",
+      "!**/*.yaml"
+    ]
   },
   "formatter": {
     "enabled": true,

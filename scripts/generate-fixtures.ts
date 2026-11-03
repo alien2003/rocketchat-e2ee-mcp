@@ -428,6 +428,8 @@ async function captureRendered(actor: Actor, ids: string[], undecryptable: strin
       if ((await loc.count()) === 0) continue;
     }
     const body = loc.locator('[role="document"][aria-roledescription="message body"]').first();
+    // What the user sees: innerText applies rendered line breaks and skips hidden nodes; textContent does neither.
+    // biome-ignore lint/performance/useDomNodeTextContent: the fixture must record the displayed text.
     const read = async () => ((await body.count()) ? await body.innerText() : await loc.innerText());
     let text = await read();
     for (let i = 0; i < 30 && text.includes(PLACEHOLDER) && !undecryptable.includes(id); i++) {

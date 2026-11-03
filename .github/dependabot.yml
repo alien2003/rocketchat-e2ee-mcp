@@ -9,6 +9,11 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 10
+    ignore:
+      # The types must match the oldest supported runtime (engines: node >=24); a newer major would let code use
+      # APIs that Node 24 does not have. Raise it together with `engines` and `.mise.toml`.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       minor-and-patch:
         applies-to: version-updates
